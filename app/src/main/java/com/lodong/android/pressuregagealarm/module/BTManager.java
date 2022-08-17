@@ -20,6 +20,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
 
+import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
 import com.lodong.android.pressuregagealarm.view.MainActivity;
 import com.lodong.android.pressuregagealarm.viewmodel.MainViewModel;
 
@@ -33,6 +34,7 @@ import java.util.UUID;
 
 public class BTManager {
     private final String TAG = BTManager.class.getSimpleName();
+    private static BTManager instance;
     private Activity activity;
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter btAdapter;
@@ -41,10 +43,14 @@ public class BTManager {
 
     private BluetoothSocket serverSocket;
 
+    private boolean isConnect;
     private ConnectedBluetoothThread connectedBluetoothThread;
     private Handler mBluetoothHandler;
+    private Handler settingBluetoothHandler;
 
     private MainViewModel.ConnectSuccessListener connectSuccessListener;
+    private MainViewModel.BluetoothConnectListener connectListener;
+
     final static int BT_REQUEST_ENABLE = 1;
     final static int BT_MESSAGE_READ = 2;
     final static int BT_CONNECTING_STATUS = 3;
@@ -69,12 +75,23 @@ public class BTManager {
         }
     };
 
-    public BTManager(Activity activity, MainViewModel.ConnectSuccessListener listener, MainActivity.BluetoothResponseHandler handler) {
+    private BTManager() { }
+
+    public static BTManager getInstance(){
+        if(instance == null){
+            instance = new BTManager();
+        }
+
+        return instance;
+    }
+
+    public void init(Activity activity, MainViewModel.ConnectSuccessListener listener, BluetoothResponseHandler handler, MainViewModel.BluetoothConnectListener bluetoothConnectListener){
         this.activity = activity;
         bluetoothManager = activity.getSystemService(BluetoothManager.class);
         this.mtList.setValue(arrayList);
         this.connectSuccessListener = listener;
         this.mBluetoothHandler = handler;
+        this.connectListener = bluetoothConnectListener;
     }
 
     //adapter 세팅
@@ -153,12 +170,14 @@ public class BTManager {
         try {
             serverSocket = device.createRfcommSocketToServiceRecord(uuids[0].getUuid());
             serverSocket.connect();
+            this.connectListener.isConnected();
         } catch (IOException e) {
             flag = false;
             e.printStackTrace();
         }
 
         if (flag) {
+            this.isConnect = true;
             connectedBluetoothThread = new ConnectedBluetoothThread(serverSocket);
             connectedBluetoothThread.start();
             connectSuccessListener.onSuccess(connectedBluetoothThread);
@@ -181,7 +200,7 @@ public class BTManager {
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
                 Toast.makeText(activity, "소켓 연결 중 오류가 발생했습니다.", Toast.LENGTH_LONG).show();
-                connectSuccessListener.onFailed();
+                connectSuccessListener.onFailed(e);
             }
 
             mmInStream = tmpIn;
@@ -209,12 +228,16 @@ public class BTManager {
                     readMessage.append(readed);
                     if (readed.contains("\n")) {
                         BTManager.this.mBluetoothHandler.obtainMessage(2, bytes, -1, readMessage.toString()).sendToTarget();
+                        if (BTManager.this.settingBluetoothHandler != null) {
+                            BTManager.this.settingBluetoothHandler.obtainMessage(2, bytes, -1, readMessage.toString()).sendToTarget();
+                        }
                         Log.d(TAG, readMessage.toString());
                         readMessage.setLength(0);
                     }
 
                 } catch (IOException e) {
                     Log.d(TAG, "Input stream was disconnected", e);
+                    BTManager.this.connectListener.isDisConnected(e);
                     break;
                 }
             }
@@ -238,5 +261,19 @@ public class BTManager {
         }
     }
 
+    public Handler getSettingBluetoothHandler() {
+        return settingBluetoothHandler;
+    }
 
+    public void setSettingBluetoothHandler(Handler settingBluetoothHandler) {
+        this.settingBluetoothHandler = settingBluetoothHandler;
+    }
+
+    public boolean isConnect() {
+        return isConnect;
+    }
+
+    public void setConnect(boolean connect) {
+        isConnect = connect;
+    }
 }

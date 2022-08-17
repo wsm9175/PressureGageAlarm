@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="array_time">
+        <item>0.5시간</item>
+        <item>1시간</item>
+        <item>4시간</item>
+        <item>8시간</item>
+        <item>12시간</item>
+        <item>24시간</item>
+        <item>직접기입</item>
+    </string-array>
+</resources>

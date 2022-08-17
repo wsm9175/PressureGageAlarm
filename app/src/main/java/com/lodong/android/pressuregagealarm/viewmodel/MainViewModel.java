@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModel;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
 import com.lodong.android.pressuregagealarm.R;
 import com.lodong.android.pressuregagealarm.adapter.BTAdapter;
 import com.lodong.android.pressuregagealarm.module.BTManager;
@@ -30,7 +31,7 @@ public class MainViewModel extends ViewModel {
     private BTAdapter btAdapter;
     private ArrayList<BluetoothDevice> bluetoothDeviceList;
 
-    private MainActivity.BluetoothResponseHandler handler;
+    private BluetoothResponseHandler handler;
 
     private final int BAR = 5;
     private final int PSI = 0;
@@ -51,12 +52,13 @@ public class MainViewModel extends ViewModel {
         return isloading;
     }
 
-    public void setHandler(MainActivity.BluetoothResponseHandler handler) {
+    public void setHandler(BluetoothResponseHandler handler) {
         this.handler = handler;
     }
 
     public void settingBluetooth() {
-        btManager = new BTManager(mRef.get(), getConnectSuccessListene(), handler);
+        btManager = BTManager.getInstance();
+        btManager.init(mRef.get(), getConnectSuccessListene(), handler, getBluetoothConnectListener());
         btAdapter = new BTAdapter(getBluetoothDeviceClickListener());
 
         if (btManager.settingBT()) {
@@ -84,6 +86,29 @@ public class MainViewModel extends ViewModel {
         recyclerView.setAdapter(btAdapter);
     }
 
+    public void changeUnit(String nowType){
+        // psi, bar, kg/cm2
+        nowType = nowType.trim();
+        Log.d(TAG, "nowType :" + nowType);
+        Log.d(TAG, "nowType length :" + nowType.length());
+        String command = "^ SET UNIT ";
+
+        if(nowType.equals("psi")){
+            Log.d(TAG, "1");
+            command += String.valueOf(BAR) + "\n";
+        }else if(nowType.equals("bar")){
+            Log.d(TAG, "2");
+            command += String.valueOf(KGF) + "\n";
+        }else if(nowType.equals("Kgf/Cm2")){
+            Log.d(TAG, "3");
+            command += String.valueOf(PSI) + "\n";
+        }
+        Log.d(TAG, command);
+        if (!command.isEmpty()) {
+            connectedBluetoothThread.write(command);
+        }
+    }
+
     public BluetoothDeviceClickListener getBluetoothDeviceClickListener() {
         return address -> {
             Toast.makeText(mRef.get(), "기기와 연결중입니다..", Toast.LENGTH_LONG).show();
@@ -109,34 +134,26 @@ public class MainViewModel extends ViewModel {
             }
 
             @Override
-            public void onFailed() {
+            public void onFailed(Exception e) {
                 MainViewModel.this.isloading.setValue(false);
+                Toast.makeText(mRef.get(), "기기와의 통신간 오류가 발생했습니다" + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         };
     }
 
-    public void changeUnit(String nowType){
-        // psi, bar, kg/cm2
-        nowType = nowType.trim();
-        Log.d(TAG, "nowType :" + nowType);
-        Log.d(TAG, "nowType length :" + nowType.length());
-        String command = "^ SET UNIT ";
 
-        if(nowType.equals("psi")){
-            Log.d(TAG, "1");
-            command += String.valueOf(BAR) + "\n";
-        }else if(nowType.equals("bar")){
-            Log.d(TAG, "2");
-            command += String.valueOf(KGF) + "\n";
-        }else if(nowType.equals("Kgf/Cm2")){
-            Log.d(TAG, "3");
-            command += String.valueOf(PSI) + "\n";
-        }
-        Log.d(TAG, command);
-        if (!command.isEmpty()) {
-            connectedBluetoothThread.write(command);
-        }
+    public BluetoothConnectListener getBluetoothConnectListener(){
+        return new BluetoothConnectListener() {
+            @Override
+            public void isConnected() {
 
+            }
+
+            @Override
+            public void isDisConnected(Exception e) {
+
+            }
+        };
     }
 
     public interface BluetoothDeviceClickListener {
@@ -146,6 +163,11 @@ public class MainViewModel extends ViewModel {
     public interface ConnectSuccessListener {
         public void onSuccess(BTManager.ConnectedBluetoothThread connectedBluetoothThread);
 
-        public void onFailed();
+        public void onFailed(Exception e);
+    }
+
+    public interface BluetoothConnectListener{
+        public void isConnected();
+        public void isDisConnected(Exception e);
     }
 }

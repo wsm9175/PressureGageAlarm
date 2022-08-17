@@ -37,6 +37,8 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
+import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
+import com.lodong.android.pressuregagealarm.OnReadMessageInterface;
 import com.lodong.android.pressuregagealarm.R;
 import com.lodong.android.pressuregagealarm.databinding.ActivityMainBinding;
 import com.lodong.android.pressuregagealarm.permission.PermissionCheck;
@@ -46,11 +48,10 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnReadMessageInterface {
     private final String TAG = MainActivity.class.getSimpleName();
     private ActivityMainBinding binding;
     private MainViewModel viewModel;
-    private ProgressDialog progressDialog;
 
     private String nowType;
     private String nowValue;
@@ -102,49 +103,7 @@ public class MainActivity extends AppCompatActivity {
         viewModel.changeUnit(nowType);
     }
 
-    public class BluetoothResponseHandler extends Handler {
-        private WeakReference<MainActivity> mActivity;
-
-        public BluetoothResponseHandler(MainActivity activity) {
-            this.mActivity = new WeakReference<>(activity);
-        }
-
-        public void setTarget(MainActivity target) {
-            this.mActivity.clear();
-            this.mActivity = new WeakReference<>(target);
-        }
-
-        public void handleMessage(Message msg) {
-            MainActivity activity = this.mActivity.get();
-            if (activity != null) {
-                switch (msg.what) {
-                    case 1:
-                        switch (msg.arg1) {
-                            case 1:
-                            default:
-                                return;
-                            case 2:
-
-                        }
-                    case 2:
-                        String readMessage = (String) msg.obj;
-                        if (readMessage != null) {
-                            activity.onReadMessage(readMessage);
-                            return;
-                        }
-                        return;
-                    case 3:
-                    case 4:
-                    case 5:
-                    default:
-                        return;
-                    case 6:
-                        return;
-                }
-            }
-        }
-    }
-
+    @Override
     public void onReadMessage(String message) {
         String value;
         StringBuilder msg = new StringBuilder();
@@ -213,6 +172,10 @@ public class MainActivity extends AppCompatActivity {
                 .setNegativeButton("Cancel", okListener)
                 .create()
                 .show();
+    }
+
+    public void intentSettingActivity(){
+        startActivity(new Intent(this, SettingActivity.class));
     }
 
     private class ProgressDialog extends Dialog {
