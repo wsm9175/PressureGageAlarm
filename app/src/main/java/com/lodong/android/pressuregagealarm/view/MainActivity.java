@@ -56,6 +56,9 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
     private String nowType;
     private String nowValue;
 
+    private boolean isSetting;
+    private boolean isDisplaySetting;
+
     //권한 관련 변수
     private String[] permisson = new String[]{Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION
@@ -77,6 +80,14 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(isSetting){
+            changeSettingDisplay();
+        }
+    }
+
     public void settingView(){
       /*  progressDialog = new ProgressDialog(this);
         viewModel.getIsloading().observe(this, new Observer<Boolean>() {
@@ -89,6 +100,18 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
                 }
             }
         });*/
+
+        viewModel.getIsSetting().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean isSetting) {
+                if(isSetting){
+                    MainActivity.this.isSetting = true;
+                    //set setting value
+                    changeSettingDisplay();
+                }
+            }
+        });
+        viewModel.getSettingInfo();
 
     }
 
@@ -108,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
         String value;
         StringBuilder msg = new StringBuilder();
         msg.append(message);
-        Log.d("MSG", msg.toString() + " , " + msg.toString().length());
+       /* Log.d("MSG", msg.toString() + " , " + msg.toString().length());*/
         if (msg.toString().length() >= 12 && msg.toString().length() < 23 && !msg.toString().contains("UNIT") && !msg.toString().contains("DATA")) {
             String[] strArrTmp = msg.toString().split(" ");
             if (strArrTmp.length == 3) {
@@ -119,8 +142,8 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
                 String type = strArrTmp[3];
                 this.nowType = type;
                 this.nowValue = press;
-                Log.d(TAG, "press : " + press);
-                Log.d(TAG, "type : " + type);
+               /* Log.d(TAG, "press : " + press);
+                Log.d(TAG, "type : " + type);*/
 
                 binding.txtPressureValue.setText(press);
                 binding.txtType.setText(type);
@@ -176,6 +199,16 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
 
     public void intentSettingActivity(){
         startActivity(new Intent(this, SettingActivity.class));
+    }
+
+    private void changeSettingDisplay(){
+        if(this.nowType == null){
+            double deviation = viewModel.getSettingDeviation();
+            binding.txtDeviation.setText("±"+deviation);
+        }else{
+            double deviation = viewModel.getSettingDeviation();
+            binding.txtDeviation.setText("±"+deviation);
+        }
     }
 
     private class ProgressDialog extends Dialog {

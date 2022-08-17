@@ -8,7 +8,9 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModel;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,11 +18,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
 import com.lodong.android.pressuregagealarm.R;
 import com.lodong.android.pressuregagealarm.adapter.BTAdapter;
+import com.lodong.android.pressuregagealarm.entity.SettingEntity;
 import com.lodong.android.pressuregagealarm.module.BTManager;
+import com.lodong.android.pressuregagealarm.roomDB.SettingListInterface;
 import com.lodong.android.pressuregagealarm.view.MainActivity;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainViewModel extends ViewModel {
     private final String TAG = MainViewModel.class.getSimpleName();
@@ -40,6 +45,14 @@ public class MainViewModel extends ViewModel {
     private MutableLiveData<Boolean> isloading = new MutableLiveData<>();
 
     private BTManager.ConnectedBluetoothThread connectedBluetoothThread;
+
+    private MutableLiveData<Boolean> isSetting = new MutableLiveData<>();
+    private long settingTime;
+    private double settingDeviation;
+    private String settingDeviationType;
+    private List<String> settingPhoneNumber;
+    private List<String> settingEmailList;
+
 
     public MainViewModel() {
     }
@@ -109,6 +122,28 @@ public class MainViewModel extends ViewModel {
         }
     }
 
+    public void getSettingInfo(){
+        SettingListInterface settingListInterface = new SettingListInterface(mRef.get().getApplication());
+        settingListInterface.getSettingList().observe((LifecycleOwner) mRef.get(), settingEntities -> {
+            if(settingEntities != null){
+                SettingEntity settingEntity = settingEntities.get(settingEntities.size()-1);
+                long time = settingEntity.getTime();
+                double deviation = settingEntity.getDeviation();
+                String deviationType = settingEntity.getDeviationType();
+                List<String> phoneNumberList = settingEntity.getPhoneNumberList();
+                List<String> emailList = settingEntity.getEmailList();
+
+                MainViewModel.this.settingTime = time;
+                MainViewModel.this.settingDeviation = deviation;
+                MainViewModel.this.settingDeviationType = deviationType;
+                MainViewModel.this.settingPhoneNumber = phoneNumberList;
+                MainViewModel.this.settingEmailList = emailList;
+
+                MainViewModel.this.isSetting.setValue(true);
+            }
+        });
+    }
+
     public BluetoothDeviceClickListener getBluetoothDeviceClickListener() {
         return address -> {
             Toast.makeText(mRef.get(), "기기와 연결중입니다..", Toast.LENGTH_LONG).show();
@@ -154,6 +189,50 @@ public class MainViewModel extends ViewModel {
 
             }
         };
+    }
+
+    public MutableLiveData<Boolean> getIsSetting() {
+        return isSetting;
+    }
+
+    public long getSettingTime() {
+        return settingTime;
+    }
+
+    public void setSettingTime(long settingTime) {
+        this.settingTime = settingTime;
+    }
+
+    public double getSettingDeviation() {
+        return settingDeviation;
+    }
+
+    public void setSettingDeviation(double settingDeviation) {
+        this.settingDeviation = settingDeviation;
+    }
+
+    public String getSettingDeviationType() {
+        return settingDeviationType;
+    }
+
+    public void setSettingDeviationType(String settingDeviationType) {
+        this.settingDeviationType = settingDeviationType;
+    }
+
+    public List<String> getSettingPhoneNumber() {
+        return settingPhoneNumber;
+    }
+
+    public void setSettingPhoneNumber(List<String> settingPhoneNumber) {
+        this.settingPhoneNumber = settingPhoneNumber;
+    }
+
+    public List<String> getSettingEmailList() {
+        return settingEmailList;
+    }
+
+    public void setSettingEmailList(List<String> settingEmailList) {
+        this.settingEmailList = settingEmailList;
     }
 
     public interface BluetoothDeviceClickListener {

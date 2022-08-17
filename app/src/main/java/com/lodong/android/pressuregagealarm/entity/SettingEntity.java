@@ -16,19 +16,26 @@ public class SettingEntity {
     private int id;
 
     @ColumnInfo(name = "time")
-    private long time;//0.5시간, 1시간, 4시간, 8시간, 12시간, 24시간
+    private long time=-99;//0.5시간, 1시간, 4시간, 8시간, 12시간, 24시간
     @ColumnInfo(name = "deviation")
-    private double deviation;
+    private double deviation=-99;
+    @ColumnInfo(name="deviationType")
+    private String deviationType;
     @ColumnInfo(name = "phoneNumberList")
     private List<String> phoneNumberList;
     @ColumnInfo(name = "emailList")
     private List<String> emailList;
 
-    public SettingEntity(long time, double deviation, List<String> phoneNumberList, List<String> emailList) {
+    public SettingEntity(long time, double deviation, List<String> phoneNumberList, List<String> emailList, String nowType) {
         this.time = time;
         this.deviation = deviation;
         this.phoneNumberList = phoneNumberList;
         this.emailList = emailList;
+        this.deviationType = nowType;
+    }
+
+    public SettingEntity() {
+
     }
 
     public long getTime() {
@@ -71,12 +78,21 @@ public class SettingEntity {
         this.emailList = emailList;
     }
 
+    public String getDeviationType() {
+        return deviationType;
+    }
+
+    public void setDeviationType(String deviationType) {
+        this.deviationType = deviationType;
+    }
+
     @Override
     public String toString() {
         return "SettingEntity{" +
                 "id=" + id +
                 ", time=" + time +
                 ", deviation=" + deviation +
+                ", deviationType='" + deviationType + '\'' +
                 ", phoneNumberList=" + phoneNumberList +
                 ", emailList=" + emailList +
                 '}';

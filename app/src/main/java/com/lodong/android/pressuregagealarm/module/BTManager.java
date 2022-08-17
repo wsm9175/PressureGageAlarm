@@ -231,7 +231,7 @@ public class BTManager {
                         if (BTManager.this.settingBluetoothHandler != null) {
                             BTManager.this.settingBluetoothHandler.obtainMessage(2, bytes, -1, readMessage.toString()).sendToTarget();
                         }
-                        Log.d(TAG, readMessage.toString());
+                       /* Log.d(TAG, readMessage.toString());*/
                         readMessage.setLength(0);
                     }
 

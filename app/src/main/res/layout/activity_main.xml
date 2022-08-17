@@ -67,7 +67,7 @@
                 android:id="@+id/txt_deviation"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="편차값 표기"
+                android:text="설정값 없음"
                 android:textAlignment="center"
                 android:textColor="@color/black"
                 android:textSize="20sp" />
