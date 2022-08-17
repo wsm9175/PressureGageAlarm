@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+    <data>
+        <variable
+            name="activity"
+            type="com.lodong.android.pressuregagealarm.view.MainActivity" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".view.MainActivity">
+
+        <LinearLayout
+            android:id="@+id/btn_connect_device"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/button_advanced_setting"
+            android:gravity="center"
+            android:clickable="true"
+            android:onClick="@{() -> activity.showDeviceList()}"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_percent="0.05"
+            app:layout_constraintHorizontal_bias="0.967"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.25">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nanumgothicbold"
+                android:text="블루투스 연결"
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/border"
+            android:orientation="vertical"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="20dp"
+            android:onClick="@{()-> activity.showDeviceList()}"
+            app:layout_constraintHorizontal_bias="0.4"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_connect_device">
+
+            <ImageView
+                android:id="@+id/img_signal"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:src="@drawable/ic_baseline_circle_24"
+                app:tint="#FF0000" />
+
+            <TextView
+                android:id="@+id/txt_deviation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="편차값 표기"
+                android:textAlignment="center"
+                android:textColor="@color/black"
+                android:textSize="20sp" />
+
+
+            <TextView
+                android:id="@+id/txt_pressureValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textAlignment="center"
+                android:textColor="@color/pressure_value_color"
+                android:textSize="35sp" />
+
+            <TextView
+                android:id="@+id/txt_type"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="단위(psi,bar,kg/cm2)"
+                android:textSize="20sp"
+                android:textAlignment="center"
+                android:textColor="@color/black" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txt_startTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginTop="28dp"
+            android:text="시작 시간 표기 (YYMMDD) 00:00"
+            android:textAlignment="viewEnd"
+            android:textColor="@color/pressure_value_color"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.6"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
+
+        <TextView
+            android:id="@+id/txt_time_remaining"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:text="남은시간 0:00"
+            android:textAlignment="viewEnd"
+            android:textColor="@color/pressure_value_color"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/txt_startTime" />
+
+        <TextView
+            android:id="@+id/txt_end_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:text="끝나는 시간 (YYMMDD) 00:00"
+            android:textAlignment="viewEnd"
+            android:textColor="@color/pressure_value_color"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/txt_time_remaining"/>
+
+        <LinearLayout
+            android:id="@+id/btn_unitChange"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/button_basic_setting"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:onClick="@{()->activity.changeUnit()}"
+            app:layout_constraintBottom_toBottomOf="@+id/btn_startRecord"
+            app:layout_constraintHeight_percent="0.1"
+            app:layout_constraintWidth_percent="0.25"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/btn_startRecord">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nanumgothicbold"
+                android:text="단위 변경"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_startRecord"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="132dp"
+            android:background="@drawable/button_basic_setting"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            app:layout_constraintEnd_toStartOf="@+id/btn_btn_endRecord"
+            app:layout_constraintHeight_percent="0.1"
+            app:layout_constraintHorizontal_bias="0.551"
+            app:layout_constraintStart_toEndOf="@+id/btn_unitChange"
+            app:layout_constraintTop_toBottomOf="@+id/txt_end_time"
+            app:layout_constraintWidth_percent="0.25">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nanumgothicbold"
+                android:text="시 작"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_btn_endRecord"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="164dp"
+            android:background="@drawable/button_basic_setting"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="@+id/btn_startRecord"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_percent="0.1"
+            app:layout_constraintStart_toEndOf="@+id/btn_unitChange"
+            app:layout_constraintTop_toTopOf="@+id/btn_startRecord"
+            app:layout_constraintWidth_percent="0.25">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nanumgothicbold"
+                android:text="종 료"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/btn_record_list"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="100dp"
+            android:background="@drawable/button_basic_setting"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            app:layout_constraintEnd_toStartOf="@+id/btn_startRecord"
+            app:layout_constraintHeight_percent="0.1"
+            app:layout_constraintStart_toEndOf="@+id/btn_unitChange"
+            app:layout_constraintTop_toBottomOf="@+id/btn_startRecord"
+            app:layout_constraintWidth_percent="0.25">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nanumgothicbold"
+                android:text="기록 보기"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_setting"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="100dp"
+            android:background="@drawable/button_basic_setting"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            app:layout_constraintEnd_toStartOf="@+id/btn_btn_endRecord"
+            app:layout_constraintHeight_percent="0.1"
+            app:layout_constraintStart_toEndOf="@+id/btn_startRecord"
+            app:layout_constraintTop_toBottomOf="@+id/btn_startRecord"
+            app:layout_constraintWidth_percent="0.25">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nanumgothicbold"
+                android:text="설 정"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

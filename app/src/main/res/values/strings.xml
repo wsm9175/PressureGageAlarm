@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">PressureGageAlarm</string>
+    <string name="permission_not_allow">권한이 허용되지 않았습니다.</string>
+    <string name="permission_denied">권한이 허용되지 않았습니다.</string>
+</resources>

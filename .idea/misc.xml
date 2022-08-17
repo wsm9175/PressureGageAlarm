@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/drawable/border.xml" value="0.242" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/drawable/button_advanced_setting.xml" value="0.136" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/drawable/button_basic_setting.xml" value="0.1" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/activity_main.xml" value="0.2596491228070175" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_bluetooth_device_list.xml" value="0.29674968341072183" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/item_bluetooth_device.xml" value="0.30055579307396324" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/progressdialog.xml" value="0.19067977768277042" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>
