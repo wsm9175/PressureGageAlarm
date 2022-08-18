@@ -174,6 +174,7 @@ public class BTManager {
         } catch (IOException e) {
             flag = false;
             e.printStackTrace();
+            connectSuccessListener.onFailed(e);
         }
 
         if (flag) {

@@ -27,6 +27,7 @@ import com.lodong.android.pressuregagealarm.databinding.ActivitySettingBinding;
 import com.lodong.android.pressuregagealarm.viewmodel.SettingViewModel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,9 +38,11 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
     private String nowType;
     private String nowValue;
 
-    private String[] timeItems;
+    private ArrayList<String> timeItems;
     private final double criTime = 3600000;
-    private double[] timeValue = {criTime * 0.5, criTime * 1, criTime * 4, criTime * 8, criTime * 12, criTime * 24};
+    private ArrayList<Double> timeValue;
+    private String[] timeList;
+    private final Double[] timeVList = {criTime * 0.5, criTime * 1, criTime * 4, criTime * 8, criTime * 12, criTime * 24};
     private final String[] ITEM_PSI = {"1.422339psi", "4.267018psi", "7.111696psi"};
     private final double[] VALUE_PSI = {1.422339, 4.267018, 7.111696};
     private final String[] ITEM_BAR = {"0.098067bar", "0.294199bar", "0.490332bar"};
@@ -79,8 +82,12 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         binding.imgSignal.setVisibility(View.INVISIBLE);
         viewModel.setHandler(new BluetoothResponseHandler(this));
         viewModel.checkConnect();
+        this.timeList = getResources().getStringArray(R.array.array_time);
+        this.timeItems = new ArrayList<>();
+        this.timeValue = new ArrayList<>();
 
-        timeItems = getResources().getStringArray(R.array.array_time);
+        this.timeItems.addAll(Arrays.asList(timeList));
+        this.timeValue.addAll(Arrays.asList(timeVList));
 
         binding.spinnerTime.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, timeItems));
 
@@ -101,8 +108,8 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
                         settingAddressBook();
                     }
                 });
-
-        this.nowSettingTime = (long) timeValue[binding.spinnerTime.getSelectedItemPosition()];
+        double timeValue = this.timeValue.get(binding.spinnerTime.getSelectedItemPosition());
+        this.nowSettingTime = (long) timeValue;
 
     }
 
@@ -110,12 +117,12 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         binding.spinnerTime.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                if (position == timeItems.length - 1) {
+                if (position == timeItems.size() - 1) {
                     //시간 직접 입력
                     showTimeInputDialog();
                 } else {
                     //시간 설정
-                    double time = timeValue[position];
+                    double time = SettingActivity.this.timeValue.get(position);
                     nowSettingTime = (long) time;
                 }
             }
@@ -183,10 +190,11 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
     }
 
     private void changeTime(String changeTime) {
-        this.timeItems = new String[]{changeTime + "시간", "직접기입"};
-        this.timeValue = new double[]{Double.parseDouble(changeTime) * criTime};
+        this.timeItems.add(this.timeItems.size() - 1, changeTime + "기입 시간");
+        this.timeValue.add(this.timeValue.size() - 1, Double.parseDouble(changeTime) * criTime);
         binding.spinnerTime.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, this.timeItems));
-        nowSettingTime = (long) this.timeValue[0];
+        nowSettingTime = (long) ((double) this.timeValue.get(timeValue.size() - 1));
+        binding.spinnerTime.setSelection(this.timeItems.size() - 2);
         Log.d(TAG, "바뀐 시간 : " + binding.spinnerTime.getSelectedItem().toString());
     }
 
@@ -258,7 +266,7 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         viewModel.getIsSetting().observe(this, new Observer<Boolean>() {
             @Override
             public void onChanged(Boolean isSetting) {
-                isSetting  = true;
+                SettingActivity.this.isSetting = true;
                 changeSettingDisplay();
             }
         });
@@ -269,7 +277,6 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         Log.d(TAG, "changeSettingDisplay");
         if (this.nowType != null) {
             double deviation = viewModel.getSettingDeviation();
-            binding.txtDeviation.setText("±" + deviation);
             this.nowDeviation = deviation;
 
             long time = viewModel.getSettingTime();
@@ -280,66 +287,65 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
             String deviationType = viewModel.getSettingDeviationType();
             if (deviationType.equals("psi")) {
                 int position = 0;
-                for(int i=0;i<3;i++){
-                    Log.d(TAG, VALUE_PSI[i] + "vs" + deviation);
-                    if(Double.compare(VALUE_PSI[i], deviation) == 0){
+                for (int i = 0; i < 3; i++) {
+                    if (Double.compare(VALUE_PSI[i], deviation) == 0) {
                         position = i;
                         break;
                     }
                 }
-                if(this.nowType.equals("psi")){
+                if (this.nowType.equals("psi")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_PSI));
                     binding.spinnerDeviation.setSelection(position);
                     /*this.nowDeviation = VALUE_BAR[position];*/
-                }else if(this.nowType.equals("bar")){
+                } else if (this.nowType.equals("bar")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_BAR));
                     binding.spinnerDeviation.setSelection(position);
                     this.nowDeviation = VALUE_BAR[position];
-                }else if(this.nowType.equals("Kgf/Cm2")){
+                } else if (this.nowType.equals("Kgf/Cm2")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_KGF));
                     binding.spinnerDeviation.setSelection(position);
                     this.nowDeviation = VALUE_KGF[position];
                 }
             } else if (deviationType.equals("bar")) {
                 int position = 0;
-                for(int i=0;i<3;i++){
+                for (int i = 0; i < 3; i++) {
                     Log.d(TAG, VALUE_BAR[i] + "vs" + deviation);
-                    if(Double.compare(VALUE_BAR[i], deviation) == 0){
+                    if (Double.compare(VALUE_BAR[i], deviation) == 0) {
                         position = i;
                         break;
                     }
                 }
-                if(this.nowType.equals("psi")){
+                if (this.nowType.equals("psi")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_PSI));
                     binding.spinnerDeviation.setSelection(position);
                     this.nowDeviation = VALUE_PSI[position];
-                }else if(this.nowType.equals("bar")){
+                } else if (this.nowType.equals("bar")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_BAR));
                     binding.spinnerDeviation.setSelection(position);
                     /*this.nowDeviation = VALUE_BAR[position];*/
-                }else if(this.nowType.equals("Kgf/Cm2")){
+                } else if (this.nowType.equals("Kgf/Cm2")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_KGF));
                     binding.spinnerDeviation.setSelection(position);
                     this.nowDeviation = VALUE_KGF[position];
                 }
             } else if (deviationType.equals("Kgf/Cm2")) {
                 int position = 0;
-                for(int i=0;i<3;i++){
+                for (int i = 0; i < 3; i++) {
                     Log.d(TAG, VALUE_KGF[i] + "vs" + deviation);
-                    if(Double.compare(VALUE_KGF[i], deviation) == 0){
+                    if (Double.compare(VALUE_KGF[i], deviation) == 0) {
                         position = i;
                         break;
                     }
                 }
-                if(this.nowType.equals("psi")){
+                if (this.nowType.equals("psi")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_PSI));
                     binding.spinnerDeviation.setSelection(position);
                     this.nowDeviation = VALUE_PSI[position];
-                }else if(this.nowType.equals("bar")){
+                } else if (this.nowType.equals("bar")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_BAR));
                     binding.spinnerDeviation.setSelection(position);
                     this.nowDeviation = VALUE_BAR[position];
-                }else if(this.nowType.equals("Kgf/Cm2")){
+                } else if (this.nowType.equals("Kgf/Cm2")) {
                     binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_KGF));
                     binding.spinnerDeviation.setSelection(position);
                     /*this.nowDeviation = VALUE_BAR[position];*/
@@ -353,10 +359,65 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
             settingAddressBook();
 
             isSettingSuccess = true;
-
+            binding.txtDeviation.setText("±" + this.nowDeviation);
         } else {
             double deviation = viewModel.getSettingDeviation();
-            binding.txtDeviation.setText("±" + deviation);
+            this.nowDeviation = deviation;
+
+            long time = viewModel.getSettingTime();
+            String changeTime = String.valueOf(time / criTime);
+            changeTime(changeTime);
+            this.nowSettingTime = time;
+
+            String deviationType = viewModel.getSettingDeviationType();
+            if (deviationType.equals("psi")) {
+                int position = 0;
+                for (int i = 0; i < 3; i++) {
+                    if (Double.compare(VALUE_PSI[i], deviation) == 0) {
+                        position = i;
+                        break;
+                    }
+                }
+                binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_PSI));
+                binding.spinnerDeviation.setSelection(position);
+                this.nowDeviation = VALUE_PSI[position];
+                this.nowType = "psi";
+            } else if (deviationType.equals("bar")) {
+                int position = 0;
+                for (int i = 0; i < 3; i++) {
+                    Log.d(TAG, VALUE_BAR[i] + "vs" + deviation);
+                    if (Double.compare(VALUE_BAR[i], deviation) == 0) {
+                        position = i;
+                        break;
+                    }
+                }
+                binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_BAR));
+                binding.spinnerDeviation.setSelection(position);
+                this.nowDeviation = VALUE_BAR[position];
+                this.nowType = "bar";
+            } else if (deviationType.equals("Kgf/Cm2")) {
+                int position = 0;
+                for (int i = 0; i < 3; i++) {
+                    Log.d(TAG, VALUE_KGF[i] + "vs" + deviation);
+                    if (Double.compare(VALUE_KGF[i], deviation) == 0) {
+                        position = i;
+                        break;
+                    }
+                }
+                binding.spinnerDeviation.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ITEM_KGF));
+                binding.spinnerDeviation.setSelection(position);
+                this.nowDeviation = VALUE_KGF[position];
+                this.nowType = "Kgf/Cm2";
+            }
+
+            List<String> phoneNumber = viewModel.getSettingPhoneNumber();
+            this.nowPhoneNumberList = phoneNumber;
+            List<String> emailNNumber = viewModel.getSettingEmailList();
+            this.nowEmailList = emailNNumber;
+            settingAddressBook();
+
+            isSettingSuccess = true;
+            binding.txtDeviation.setText("±" + this.nowDeviation);
         }
     }
 
@@ -391,7 +452,7 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
                     isSpinnerSetting = true;
                 }
 
-                if(this.isSetting && !isSettingSuccess){
+                if (this.isSetting && !isSettingSuccess) {
                     changeSettingDisplay();
                 }
             }

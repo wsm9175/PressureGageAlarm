@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.MutableLiveData;
@@ -52,7 +53,7 @@ public class SettingViewModel extends ViewModel{
     public void getSettingInfo(){
         SettingListInterface settingListInterface = new SettingListInterface(mRef.get().getApplication());
         settingListInterface.getSettingList().observe((LifecycleOwner) mRef.get(), settingEntities -> {
-            if(settingEntities != null){
+            if(settingEntities != null && settingEntities.size() != 0){
                 SettingEntity settingEntity = settingEntities.get(settingEntities.size()-1);
                 long time = settingEntity.getTime();
                 double deviation = settingEntity.getDeviation();
@@ -74,6 +75,7 @@ public class SettingViewModel extends ViewModel{
         settingListInterface = new SettingListInterface(mRef.get().getApplication());
         SettingEntity settingEntity = new SettingEntity(time, deviation, phoneNumberList, emailList, nowType);
         settingListInterface.insert(settingEntity);
+        Toast.makeText(mRef.get(), "설정을 저장합니다", Toast.LENGTH_SHORT).show();
     }
 
     public MutableLiveData<Boolean> getIsSetting() {

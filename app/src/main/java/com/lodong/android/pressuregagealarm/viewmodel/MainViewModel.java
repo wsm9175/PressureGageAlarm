@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.lifecycle.LifecycleOwner;
@@ -33,6 +34,7 @@ public class MainViewModel extends ViewModel {
     private BTManager btManager;
     private AlertDialog alertDialog;
 
+    private MutableLiveData<Boolean> isBluetoothDeviceConnect = new MutableLiveData<>();
     private BTAdapter btAdapter;
     private ArrayList<BluetoothDevice> bluetoothDeviceList;
 
@@ -53,6 +55,9 @@ public class MainViewModel extends ViewModel {
     private List<String> settingPhoneNumber;
     private List<String> settingEmailList;
 
+    private final double[] VALUE_PSI = {1.422339, 4.267018, 7.111696};
+    private final double[] VALUE_BAR = {0.098067, 0.294199, 0.490332};
+    private final double[] VALUE_KGF = {0.1, 0.3, 0.5};
 
     public MainViewModel() {
     }
@@ -105,16 +110,43 @@ public class MainViewModel extends ViewModel {
         Log.d(TAG, "nowType :" + nowType);
         Log.d(TAG, "nowType length :" + nowType.length());
         String command = "^ SET UNIT ";
-
+        int position = 0;
         if(nowType.equals("psi")){
             Log.d(TAG, "1");
             command += String.valueOf(BAR) + "\n";
+
+            for(int i = 0;i<VALUE_PSI.length;i++){
+                Log.d(TAG, "Double.compare(this.settingDeviation, VALUE_PSI[i])" + Double.compare(this.settingDeviation, VALUE_PSI[i]));
+                if(Double.compare(this.settingDeviation, VALUE_PSI[i]) == 0){
+                    position = i;
+                    break;
+                }
+            }
+
+            this.settingDeviation = VALUE_BAR[position];
+            this.settingDeviationType = "bar";
         }else if(nowType.equals("bar")){
             Log.d(TAG, "2");
             command += String.valueOf(KGF) + "\n";
+            for(int i = 0;i<VALUE_PSI.length;i++){
+                if(Double.compare(this.settingDeviation, VALUE_BAR[i]) == 0){
+                    position = i;
+                }
+            }
+            this.settingDeviation = VALUE_KGF[position];
+            this.settingDeviationType = "Kgf/Cm2";
         }else if(nowType.equals("Kgf/Cm2")){
             Log.d(TAG, "3");
             command += String.valueOf(PSI) + "\n";
+
+            for(int i = 0;i<VALUE_PSI.length;i++){
+                if(Double.compare(this.settingDeviation, VALUE_KGF[i]) == 0){
+                    position = i;
+                }
+            }
+
+            this.settingDeviation = VALUE_PSI[position];
+            this.settingDeviationType = "psi";
         }
         Log.d(TAG, command);
         if (!command.isEmpty()) {
@@ -122,10 +154,71 @@ public class MainViewModel extends ViewModel {
         }
     }
 
+    public void changeDeviationType(String nowType){
+        Log.d(TAG, "settingDeviationType : "+settingDeviationType);
+        Log.d(TAG, "nowType : "+nowType);
+        if (this.settingDeviationType.equals("psi")) {
+            int position = 0;
+            for(int i=0;i<3;i++){
+                Log.d(TAG,"Double.compare(VALUE_PSI[i], this.settingDeviation : " + Double.compare(VALUE_PSI[i], this.settingDeviation));
+                if(Double.compare(VALUE_PSI[i], this.settingDeviation) == 0){
+                    position = i;
+                    break;
+                }
+            }
+
+            if(nowType.equals("psi")){
+                /*this.nowDeviation = VALUE_BAR[position];*/
+            }else if(nowType.equals("bar")){
+                this.settingDeviation = VALUE_BAR[position];
+                this.settingDeviationType ="bar";
+            }else if(nowType.equals("Kgf/Cm2")){
+                this.settingDeviation = VALUE_KGF[position];
+                this.settingDeviationType ="Kgf/Cm2";
+            }
+        } else if (this.settingDeviationType.equals("bar")) {
+            int position = 0;
+            for(int i=0;i<3;i++){
+                if(Double.compare(VALUE_BAR[i], this.settingDeviation) == 0){
+                    position = i;
+                    break;
+                }
+            }
+            if(nowType.equals("psi")){
+                this.settingDeviation = VALUE_PSI[position];
+                this.settingDeviationType = "psi";
+            }else if(nowType.equals("bar")){
+                /*this.nowDeviation = VALUE_BAR[position];*/
+            }else if(nowType.equals("Kgf/Cm2")){
+                this.settingDeviation = VALUE_KGF[position];
+                this.settingDeviationType = "Kgf/Cm2";
+            }
+        } else if (this.settingDeviationType.equals("Kgf/Cm2")) {
+            int position = 0;
+            for(int i=0;i<3;i++){
+                if(Double.compare(VALUE_KGF[i], this.settingDeviation) == 0){
+                    position = i;
+                    break;
+                }
+            }
+            if(nowType.equals("psi")){
+                this.settingDeviation = VALUE_PSI[position];
+                this.settingDeviationType = "psi";
+            }else if(nowType.equals("bar")){
+                this.settingDeviation = VALUE_BAR[position];
+                this.settingDeviationType = "bar";
+            }else if(nowType.equals("Kgf/Cm2")){
+                /*this.nowDeviation = VALUE_BAR[position];*/
+            }
+        }
+
+    }
+
+
     public void getSettingInfo(){
         SettingListInterface settingListInterface = new SettingListInterface(mRef.get().getApplication());
         settingListInterface.getSettingList().observe((LifecycleOwner) mRef.get(), settingEntities -> {
-            if(settingEntities != null){
+            if(settingEntities != null && settingEntities.size() != 0){
                 SettingEntity settingEntity = settingEntities.get(settingEntities.size()-1);
                 long time = settingEntity.getTime();
                 double deviation = settingEntity.getDeviation();
@@ -165,13 +258,15 @@ public class MainViewModel extends ViewModel {
                 Toast.makeText(mRef.get(), "기기와 연결이 성공적으로 되었습니다.", Toast.LENGTH_SHORT).show();
                 MainViewModel.this.isloading.setValue(false);
                 MainViewModel.this.connectedBluetoothThread = connectedBluetoothThread;
+                isBluetoothDeviceConnect.setValue(true);
                 connectedBluetoothThread.write("^ GET DATA\n");
             }
 
             @Override
             public void onFailed(Exception e) {
                 MainViewModel.this.isloading.setValue(false);
-                Toast.makeText(mRef.get(), "기기와의 통신간 오류가 발생했습니다" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                isBluetoothDeviceConnect.setValue(false);
+                Toast.makeText(mRef.get(), "기기와의 통신을 실패했습니다." + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         };
     }
@@ -189,6 +284,10 @@ public class MainViewModel extends ViewModel {
 
             }
         };
+    }
+
+    public MutableLiveData<Boolean> getIsBluetoothDeviceConnect() {
+        return isBluetoothDeviceConnect;
     }
 
     public MutableLiveData<Boolean> getIsSetting() {

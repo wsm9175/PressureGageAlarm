@@ -101,7 +101,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="10dp"
             android:layout_marginTop="28dp"
-            android:text="시작 시간 표기 (YYMMDD) 00:00"
+            android:text="기록 시작 시간(YYMMDD) :  00:00"
             android:textAlignment="viewEnd"
             android:textColor="@color/pressure_value_color"
             android:textSize="20sp"
@@ -115,7 +115,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="10dp"
-            android:text="남은시간 0:00"
+            android:text="남은시간 : 0:00"
             android:textAlignment="viewEnd"
             android:textColor="@color/pressure_value_color"
             android:textSize="20sp"
@@ -128,13 +128,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="10dp"
-            android:text="끝나는 시간 (YYMMDD) 00:00"
+            android:text="기록 종료 시간(YYMMDD) :  00:00"
             android:textAlignment="viewEnd"
             android:textColor="@color/pressure_value_color"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_time_remaining"/>
+
+        <TextView
+            android:id="@+id/txt_setting_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:text="설정된 기록 시간 : 0시간"
+            android:textAlignment="viewEnd"
+            android:textColor="@color/colorSelected"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/txt_end_time"/>
 
         <LinearLayout
             android:id="@+id/btn_unitChange"

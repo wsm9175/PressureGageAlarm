@@ -13,7 +13,7 @@ public class SettingListInterface {
     private LiveData<List<SettingEntity>> settingList;
 
     public SettingListInterface(Application application) {
-        RoomDB db = RoomDB.getInstance(application);
+        SettingListRoomDB db = SettingListRoomDB.getInstance(application);
         settingListDao = db.settingListDao();
         settingList = settingListDao.getAll();
     }

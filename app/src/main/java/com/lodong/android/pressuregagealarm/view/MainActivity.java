@@ -33,6 +33,7 @@ import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.tabs.TabItem;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
@@ -53,11 +54,22 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
     private ActivityMainBinding binding;
     private MainViewModel viewModel;
 
-    private String nowType;
+    private String nowType = "";
     private String nowValue;
+
+    private boolean isBluetoothDeviceConnect;
 
     private boolean isSetting;
     private boolean isDisplaySetting;
+
+    private final String MENT_RECORDTIME = "설정된 기록 시간 : ";
+    private final String MENT_STARTTIME ="기록 시작 시간 : ";
+    private final String MENT_LASTTIME = "남은 시간 : ";
+    private final String MENT_ENDTIME = "기록 종료 시간 : ";
+    private final double criTime = 3600000;
+
+    //기록 관련 변수
+    private boolean isRecord;
 
     //권한 관련 변수
     private String[] permisson = new String[]{Manifest.permission.BLUETOOTH_CONNECT,
@@ -83,12 +95,12 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
     @Override
     protected void onResume() {
         super.onResume();
-        if(isSetting){
+        if (isSetting) {
             changeSettingDisplay();
         }
     }
 
-    public void settingView(){
+    public void settingView() {
       /*  progressDialog = new ProgressDialog(this);
         viewModel.getIsloading().observe(this, new Observer<Boolean>() {
             @Override
@@ -101,10 +113,20 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
             }
         });*/
 
+        viewModel.getIsBluetoothDeviceConnect().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean isConnect) {
+                if (isConnect) {
+                    MainActivity.this.isBluetoothDeviceConnect = true;
+                    changeSettingDisplay();
+                }
+            }
+        });
+
         viewModel.getIsSetting().observe(this, new Observer<Boolean>() {
             @Override
             public void onChanged(Boolean isSetting) {
-                if(isSetting){
+                if (isSetting) {
                     MainActivity.this.isSetting = true;
                     //set setting value
                     changeSettingDisplay();
@@ -122,8 +144,13 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
         viewModel.showDeleteDialog();
     }
 
-    public void changeUnit(){
-        viewModel.changeUnit(nowType);
+    public void changeUnit() {
+        if (isBluetoothDeviceConnect) {
+            viewModel.changeUnit(nowType);
+            isDisplaySetting = false;
+        } else {
+            displayNotConnect();
+        }
     }
 
     @Override
@@ -131,27 +158,35 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
         String value;
         StringBuilder msg = new StringBuilder();
         msg.append(message);
-       /* Log.d("MSG", msg.toString() + " , " + msg.toString().length());*/
+        /* Log.d("MSG", msg.toString() + " , " + msg.toString().length());*/
         if (msg.toString().length() >= 12 && msg.toString().length() < 23 && !msg.toString().contains("UNIT") && !msg.toString().contains("DATA")) {
             String[] strArrTmp = msg.toString().split(" ");
             if (strArrTmp.length == 3) {
                 Log.d("ERROR", "********ERROR**********");
                 return;
+            }else if(strArrTmp.length == 2){
+                Log.d("ERROR", "********ERROR**********");
+                return;
             } else {
                 String press = strArrTmp[2];
                 String type = strArrTmp[3];
-                this.nowType = type;
-                this.nowValue = press;
-               /* Log.d(TAG, "press : " + press);
-                Log.d(TAG, "type : " + type);*/
 
                 binding.txtPressureValue.setText(press);
                 binding.txtType.setText(type);
                 if (binding.imgSignal.getVisibility() == View.INVISIBLE) {
                     binding.imgSignal.setVisibility(View.VISIBLE);
-                }else{
+                } else {
                     binding.imgSignal.setVisibility(View.INVISIBLE);
                 }
+                if (!isDisplaySetting) {
+                    changeSettingDisplay();
+                }
+                if(!nowType.equals(type)){
+                    this.nowType = type;
+                    changeSettingDisplay();
+                }
+                this.nowType = type;
+                this.nowValue = press;
             }
         }
     }
@@ -168,6 +203,7 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
 
         if (result == PermissionCheck.RESULT_GRANTED) {
             //권한 동의 완료
+            settingView();
         } else if (result == PermissionCheck.RESULT_NOT_GRANTED) {
             showDialogOK(getString(R.string.permission_not_allow),
                     (dialog, which) -> {
@@ -197,18 +233,52 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
                 .show();
     }
 
-    public void intentSettingActivity(){
+    public void intentSettingActivity() {
         startActivity(new Intent(this, SettingActivity.class));
     }
 
-    private void changeSettingDisplay(){
-        if(this.nowType == null){
+    private void changeSettingDisplay() {
+        if (this.nowType == null && this.isSetting) {
+            Log.d(TAG, "changeSettingDisplay()1");
             double deviation = viewModel.getSettingDeviation();
-            binding.txtDeviation.setText("±"+deviation);
-        }else{
+            binding.txtDeviation.setText("±" + deviation);
+        } else if (this.isSetting) {
+            Log.d(TAG, "changeSettingDisplay()2");
+            viewModel.changeDeviationType(this.nowType.trim());
             double deviation = viewModel.getSettingDeviation();
-            binding.txtDeviation.setText("±"+deviation);
+            Log.d(TAG, deviation+"");
+            binding.txtDeviation.setText("±" + deviation);
+            isDisplaySetting = true;
         }
+
+        long time = viewModel.getSettingTime();
+        String displayTime = MENT_RECORDTIME + (time / criTime);
+        binding.txtSettingTime.setText(displayTime + "시간");
+    }
+
+    private void recordStart() {
+        if(!isBluetoothDeviceConnect){
+            displayNotConnect();
+            return;
+        }
+        if(!isSetting){
+            Toast.makeText(getApplication(), "설정값을 세팅해주세요.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        //기록 시작 -> RoomDB 연결 -> event가 발생할 때마다 RoomDB에 기록
+        isRecord = true;
+    }
+
+    private void recordStop(){
+        if(!isRecord){
+            Toast.makeText(getApplication(), "기록중이 아닙니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        isRecord = false;
+    }
+
+    private void displayNotConnect() {
+        Toast.makeText(getApplication(), "블루투스 모델이 연결되지 않았습니다.\n연결 후 기능을 이용해주세요.", Toast.LENGTH_SHORT).show();
     }
 
     private class ProgressDialog extends Dialog {
