@@ -2,7 +2,11 @@ package com.lodong.android.pressuregagealarm;
 
 import android.app.Activity;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.lodong.android.pressuregagealarm.view.MainActivity;
 
@@ -11,7 +15,8 @@ import java.lang.ref.WeakReference;
 public class BluetoothResponseHandler extends Handler {
     private WeakReference<Activity> mActivity;
 
-    public BluetoothResponseHandler(Activity activity) {
+    public BluetoothResponseHandler(Activity activity, @NonNull Looper looper) {
+        super(looper);
         this.mActivity = new WeakReference<>(activity);
     }
 

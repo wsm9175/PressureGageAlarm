@@ -7,65 +7,105 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.telephony.SmsManager;
+import android.view.View;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class SMSender {
     private final String MENT1 = "이하입니다. 확인해주세요.";
-    private String tarketPhoneNumber;
+    private ArrayList<String> targetList;
     private Activity mActivity;
 
-    String SENT = "SMS_SENT";
-    String DELIVERED = "SMS_DELIVERD";
+    private int mMessageSentParts;
+    private int mMessageSentCount;
+    private int mMessageSentTotalParts;
+    final String SENT = "SMS_SENT";
+    final String DELIVERED = "SMS_DELIVERD";
+
+    private String message;
 
     public SMSender(Activity activity){
         this.mActivity = activity;
     }
 
-    public void sendSMS(String info){
-        String contents = info;
-        startSendMessages(getTarketPhoneNumber(), contents);
+    public void startSendMessages(String message){
+        mMessageSentCount = 0;
+        sendSMS(targetList.get(mMessageSentCount),message);
     }
 
-    private void startSendMessages(final String phoneNumber, String contents){
-
+    public void sendSMS(final String phoneNumber, String message){
+        String contents = message;
+        this.message = message;
         SmsManager sms = SmsManager.getDefault();
+        ArrayList<String> parts = sms.divideMessage(message);
+        mMessageSentTotalParts = parts.size();
+
+        ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
+        ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
 
         PendingIntent sentPI = PendingIntent.getBroadcast(mActivity, 0, new Intent(SENT), 0|PendingIntent.FLAG_IMMUTABLE);
         PendingIntent deliveredPI = PendingIntent.getBroadcast(mActivity, 0, new Intent(DELIVERED), 0|PendingIntent.FLAG_IMMUTABLE);
 
-        sms.sendTextMessage(phoneNumber, null, contents , sentPI, deliveredPI);
+        for (int j = 0; j < mMessageSentTotalParts; j++) {
+            sentIntents.add(sentPI);
+            deliveryIntents.add(deliveredPI);
+        }
+        mMessageSentParts = 0;
+        sms.sendMultipartTextMessage(phoneNumber, null, parts, sentIntents, deliveryIntents);
     }
 
-    public String getTarketPhoneNumber() {
-        return tarketPhoneNumber;
+
+    public ArrayList<String> getTarketPhoneNumber() {
+        return targetList;
     }
 
-    public void setTarketPhoneNumber(String targetPhoneNumber) {
-        this.tarketPhoneNumber = tarketPhoneNumber;
+    public void setTarketPhoneNumber(ArrayList<String> targetPhoneNumber) {
+        this.targetList = targetPhoneNumber;
     }
-
+    private void sendNextMessage(String message){
+        if(thereAreSmsToSend()){
+            sendSMS(targetList.get(mMessageSentCount), message);
+        }else{
+            Toast.makeText(mActivity, "SMS 전송 완료하였습니다.",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+    private boolean thereAreSmsToSend(){
+        return mMessageSentCount < targetList.size();
+    }
     public BroadcastReceiver getSentBroadCast(){
 
         return new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                switch (getResultCode()){
+                switch (getResultCode()) {
                     case Activity.RESULT_OK:
-                        Toast.makeText(mActivity.getBaseContext(), "SMS 발송 시작", Toast.LENGTH_SHORT).show();
+
+                        mMessageSentParts++;
+                        if ( mMessageSentParts == mMessageSentTotalParts ) {
+                            mMessageSentCount++;
+                            sendNextMessage(message);
+                        }
+
+                        Toast.makeText(mActivity, "SMS sent",
+                                Toast.LENGTH_SHORT).show();
                         break;
                     case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                        Toast.makeText(mActivity.getBaseContext(), "Generic failure", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(mActivity, "Generic failure",
+                                Toast.LENGTH_SHORT).show();
                         break;
                     case SmsManager.RESULT_ERROR_NO_SERVICE:
-                        Toast.makeText(mActivity.getBaseContext(), "No service",
+                        Toast.makeText(mActivity, "No service",
                                 Toast.LENGTH_SHORT).show();
                         break;
                     case SmsManager.RESULT_ERROR_NULL_PDU:
-                        Toast.makeText(mActivity.getBaseContext(), "Null PDU",
+                        Toast.makeText(mActivity, "Null PDU",
                                 Toast.LENGTH_SHORT).show();
                         break;
                     case SmsManager.RESULT_ERROR_RADIO_OFF:
-                        Toast.makeText(mActivity.getBaseContext(), "Radio off",
+                        Toast.makeText(mActivity, "Radio off",
                                 Toast.LENGTH_SHORT).show();
                         break;
                 }

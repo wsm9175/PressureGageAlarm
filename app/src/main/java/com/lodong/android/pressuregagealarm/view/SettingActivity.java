@@ -6,12 +6,14 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -62,6 +64,15 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
     private boolean isSetting;
     private boolean isSettingSuccess;
 
+    private MutableLiveData<Double> nowValueML = new MutableLiveData<>();
+    private boolean isPressZeroAlarm;
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,7 +91,7 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
 
     private void init() {
         binding.imgSignal.setVisibility(View.INVISIBLE);
-        viewModel.setHandler(new BluetoothResponseHandler(this));
+        viewModel.setHandler(new BluetoothResponseHandler(this, Looper.getMainLooper()));
         viewModel.checkConnect();
         this.timeList = getResources().getStringArray(R.array.array_time);
         this.timeItems = new ArrayList<>();
@@ -169,6 +180,18 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
 
             launcher.launch(intent);
         });
+
+        this.nowValueML.observe(this, new Observer<Double>() {
+            @Override
+            public void onChanged(Double press) {
+                if (press <= 0.0) {
+                    if (!isPressZeroAlarm) {
+                        isPressZeroAlarm = true;
+                        showAlarmPressZero();
+                    }
+                }
+            }
+        });
     }
 
     private void settingSpinnerDeviation() {
@@ -191,17 +214,18 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
 
     private void changeTime(String changeTime) {
         this.timeItems.add(this.timeItems.size() - 1, changeTime + "기입 시간");
-        this.timeValue.add(this.timeValue.size() - 1, Double.parseDouble(changeTime) * criTime);
+        this.timeValue.add(this.timeValue.size(), Double.parseDouble(changeTime) * criTime);
         binding.spinnerTime.setAdapter(new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, this.timeItems));
         nowSettingTime = (long) ((double) this.timeValue.get(timeValue.size() - 1));
         binding.spinnerTime.setSelection(this.timeItems.size() - 2);
         Log.d(TAG, "바뀐 시간 : " + binding.spinnerTime.getSelectedItem().toString());
+        Log.d(TAG, "바뀐 시간 : " + this.timeValue);
     }
 
     private void changeDeviation(Double deviation, String type) {
         this.nowDeviation = deviation;
         this.nowType = type;
-        Log.d(TAG, "바뀐 편차 : " + binding.spinnerTime.getSelectedItem().toString());
+        Log.d(TAG, "바뀐 편차 : " + binding.spinnerDeviation.getSelectedItem().toString());
     }
 
     private void showTimeInputDialog() {
@@ -250,6 +274,8 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         if (displayAddress.length() != 0) {
             String display = displayAddress.toString();
             binding.txtAddressBook.setText(display);
+        } else {
+            binding.txtAddressBook.setText("설정되지 않음");
         }
     }
 
@@ -259,6 +285,14 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         List<String> phoneNumberList = this.nowPhoneNumberList;
         List<String> emailList = this.nowEmailList;
 
+        if (this.nowPhoneNumberList == null && this.nowEmailList == null) {
+            showNoAddressDialog();
+            return;
+        }
+        if(this.nowPhoneNumberList.size() == 0 && this.nowEmailList.size() == 0){
+            showNoAddressDialog();
+            return;
+        }
         viewModel.insertSettingInfo(time, deviation, phoneNumberList, emailList, nowType);
     }
 
@@ -267,7 +301,7 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
             @Override
             public void onChanged(Boolean isSetting) {
                 SettingActivity.this.isSetting = true;
-                changeSettingDisplay();
+                isSettingSuccess = false;
             }
         });
         viewModel.getSettingInfo();
@@ -421,6 +455,38 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         }
     }
 
+    private void showAlarmPressZero() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_press_zero, null);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+
+        final AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+
+        Button inputButton = dialogView.findViewById(R.id.btn_ok);
+
+        inputButton.setOnClickListener(view -> {
+            alertDialog.dismiss();
+        });
+    }
+
+    private void showNoAddressDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_no_address, null);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+
+        final AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+
+        Button inputButton = dialogView.findViewById(R.id.btn_ok);
+
+        inputButton.setOnClickListener(view -> {
+            alertDialog.dismiss();
+        });
+    }
+
     @Override
     public void onReadMessage(String message) {
         String value;
@@ -432,6 +498,9 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
             if (strArrTmp.length == 3) {
                 Log.e("ERROR", "********ERROR**********");
                 return;
+            } else if (strArrTmp.length == 2) {
+                Log.e("ERROR", "********ERROR**********");
+                return;
             } else {
                 String press = strArrTmp[2];
                 String type = strArrTmp[3];
@@ -440,6 +509,7 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
               /*  Log.d(TAG, "press : " + press);
                 Log.d(TAG, "type : " + type);*/
 
+                nowValueML.setValue(Double.valueOf(press.trim()));
                 binding.txtPressureValue.setText(press);
                 binding.txtType.setText(type);
                 if (binding.imgSignal.getVisibility() == View.INVISIBLE) {

@@ -12,4 +12,6 @@
 
     <color name="colorSelected">#9F9F9F</color>
     <color name="colorDefault">#FFFFFF</color>
+
+    <color name="colorGrid">#FFFFFF</color>
 </resources>

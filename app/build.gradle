@@ -48,4 +48,11 @@ dependencies {
     annotationProcessor "androidx.room:room-compiler:$room_version"
 
     implementation 'com.google.code.gson:gson:2.9.0' // gson
+
+    //mail sender
+    implementation 'com.sun.mail:android-mail:1.5.5'
+    implementation 'com.sun.mail:android-activation:1.5.5'
+
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
 }

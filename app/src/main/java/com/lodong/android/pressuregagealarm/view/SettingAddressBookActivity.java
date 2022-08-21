@@ -40,12 +40,8 @@ public class SettingAddressBookActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Intent intent = new Intent();
-        if(this.phoneNumberList != null){
-            intent.putStringArrayListExtra("phoneNumberList", (ArrayList<String>) this.phoneNumberList);
-        }
-        if(this.emailList != null){
-            intent.putStringArrayListExtra("emailList", (ArrayList<String>)this.emailList);
-        }
+        intent.putStringArrayListExtra("phoneNumberList", (ArrayList<String>) this.phoneNumberList);
+        intent.putStringArrayListExtra("emailList", (ArrayList<String>) this.emailList);
         setResult(RESULT_OK, intent);
         finish();
     }
@@ -60,7 +56,7 @@ public class SettingAddressBookActivity extends AppCompatActivity {
         settingClickListener();
     }
 
-    private void init(){
+    private void init() {
         launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
@@ -91,10 +87,10 @@ public class SettingAddressBookActivity extends AppCompatActivity {
         this.phoneNumberList = phoneNumberList;
         this.emailList = emailList;
 
-        if(this.phoneNumberList == null){
+        if (this.phoneNumberList == null) {
             this.phoneNumberList = new ArrayList<>();
         }
-        if(this.emailList == null){
+        if (this.emailList == null) {
             this.emailList = new ArrayList<>();
         }
 
@@ -121,6 +117,7 @@ public class SettingAddressBookActivity extends AppCompatActivity {
                         break;
                 }
             }
+
             @Override
             public void onTabUnselected(TabLayout.Tab tab) {
 
@@ -149,7 +146,7 @@ public class SettingAddressBookActivity extends AppCompatActivity {
         launcher.launch(intent);
     }
 
-    public void showTypingDialog(){
+    public void showTypingDialog() {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_input_address, null);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -164,10 +161,10 @@ public class SettingAddressBookActivity extends AppCompatActivity {
 
         inputButton.setOnClickListener(view -> {
             String address = edtAddress.getText().toString();
-            if(address == null){
+            if (address == null) {
                 Toast.makeText(this, "값을 입력해주세요", Toast.LENGTH_SHORT).show();
                 return;
-            }else{
+            } else {
                 inputAddress(address);
             }
             alertDialog.dismiss();
@@ -178,24 +175,24 @@ public class SettingAddressBookActivity extends AppCompatActivity {
         });
     }
 
-    private void inputAddress(String address){
-        if(position == 0){
+    private void inputAddress(String address) {
+        if (position == 0) {
             this.phoneNumberList.add(address);
             addressAdapter.setmList(this.phoneNumberList);
-        }else if(position == 1){
+        } else if (position == 1) {
             this.emailList.add(address);
             addressAdapter.setmList(this.emailList);
         }
     }
 
-    private AddressLongClickListener getAddressLongClickListener(){
+    private AddressLongClickListener getAddressLongClickListener() {
         return new AddressLongClickListener() {
             @Override
             public void onLongClick(int position) {
-                if(SettingAddressBookActivity.this.position == 0){
+                if (SettingAddressBookActivity.this.position == 0) {
                     SettingAddressBookActivity.this.phoneNumberList.remove(position);
                     addressAdapter.setmList(SettingAddressBookActivity.this.phoneNumberList);
-                }else if(SettingAddressBookActivity.this.position == 1){
+                } else if (SettingAddressBookActivity.this.position == 1) {
                     SettingAddressBookActivity.this.emailList.remove(position);
                     addressAdapter.setmList(SettingAddressBookActivity.this.emailList);
                 }
@@ -203,7 +200,7 @@ public class SettingAddressBookActivity extends AppCompatActivity {
         };
     }
 
-    public interface AddressLongClickListener{
+    public interface AddressLongClickListener {
         public void onLongClick(int position);
     }
 }

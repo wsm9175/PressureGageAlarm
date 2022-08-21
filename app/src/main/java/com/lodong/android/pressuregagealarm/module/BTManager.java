@@ -11,17 +11,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
-import android.os.Message;
 import android.os.ParcelUuid;
-import android.os.SystemClock;
 import android.util.Log;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
 
 import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
-import com.lodong.android.pressuregagealarm.view.MainActivity;
 import com.lodong.android.pressuregagealarm.viewmodel.MainViewModel;
 
 import java.io.IOException;
@@ -30,7 +26,6 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Set;
-import java.util.UUID;
 
 public class BTManager {
     private final String TAG = BTManager.class.getSimpleName();
@@ -57,6 +52,9 @@ public class BTManager {
 
     private final static int REQUEST_ENABLE_BT = 1;
 
+    //for record
+    private MainViewModel.UpdatePressListener updateListener;
+
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @SuppressLint("MissingPermission")
         @Override
@@ -75,17 +73,18 @@ public class BTManager {
         }
     };
 
-    private BTManager() { }
+    private BTManager() {
+    }
 
-    public static BTManager getInstance(){
-        if(instance == null){
+    public static BTManager getInstance() {
+        if (instance == null) {
             instance = new BTManager();
         }
 
         return instance;
     }
 
-    public void init(Activity activity, MainViewModel.ConnectSuccessListener listener, BluetoothResponseHandler handler, MainViewModel.BluetoothConnectListener bluetoothConnectListener){
+    public void init(Activity activity, MainViewModel.ConnectSuccessListener listener, BluetoothResponseHandler handler, MainViewModel.BluetoothConnectListener bluetoothConnectListener) {
         this.activity = activity;
         bluetoothManager = activity.getSystemService(BluetoothManager.class);
         this.mtList.setValue(arrayList);
@@ -115,6 +114,7 @@ public class BTManager {
 
     @SuppressLint("MissingPermission")
     public void getBtDevice() {
+        arrayList = new ArrayList<>();
         Set<BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
         if (pairedDevices.size() > 0) {
             for (BluetoothDevice device : pairedDevices) {
@@ -166,22 +166,31 @@ public class BTManager {
             e.printStackTrace();
         }
         Log.d(TAG, device.getName());
-        boolean flag = true;
         try {
             serverSocket = device.createRfcommSocketToServiceRecord(uuids[0].getUuid());
-            serverSocket.connect();
-            this.connectListener.isConnected();
+            new Thread(() -> {
+                try {
+                    boolean flag = true;
+                    serverSocket.connect();
+                    if (flag) {
+                        BTManager.this.isConnect = true;
+                        connectedBluetoothThread = new ConnectedBluetoothThread(serverSocket);
+                        connectedBluetoothThread.start();
+                        connectSuccessListener.onSuccess(connectedBluetoothThread);
+                        BTManager.this.connectListener.isConnected();
+                    }
+                } catch (IOException e) {
+                    /*flag = false;*/
+                    e.printStackTrace();
+                    connectSuccessListener.onFailed(e);
+                }
+            }).start();
         } catch (IOException e) {
-            flag = false;
             e.printStackTrace();
             connectSuccessListener.onFailed(e);
-        }
-
-        if (flag) {
-            this.isConnect = true;
-            connectedBluetoothThread = new ConnectedBluetoothThread(serverSocket);
-            connectedBluetoothThread.start();
-            connectSuccessListener.onSuccess(connectedBluetoothThread);
+        } catch (NullPointerException e){
+            e.printStackTrace();
+            connectSuccessListener.onFailed(e);
         }
     }
 
@@ -232,10 +241,12 @@ public class BTManager {
                         if (BTManager.this.settingBluetoothHandler != null) {
                             BTManager.this.settingBluetoothHandler.obtainMessage(2, bytes, -1, readMessage.toString()).sendToTarget();
                         }
-                       /* Log.d(TAG, readMessage.toString());*/
+                        if(BTManager.this.updateListener != null){
+                            updateListener.isUpdate(readMessage.toString());
+                        }
+                        /* Log.d(TAG, readMessage.toString());*/
                         readMessage.setLength(0);
                     }
-
                 } catch (IOException e) {
                     Log.d(TAG, "Input stream was disconnected", e);
                     BTManager.this.connectListener.isDisConnected(e);
@@ -276,5 +287,10 @@ public class BTManager {
 
     public void setConnect(boolean connect) {
         isConnect = connect;
+    }
+
+    public void setUpdateListener(MainViewModel.UpdatePressListener updateListener) {
+        Log.d(TAG, "set updateListener");
+        this.updateListener = updateListener;
     }
 }

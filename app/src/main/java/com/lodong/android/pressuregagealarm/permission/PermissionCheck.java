@@ -49,6 +49,7 @@ public class PermissionCheck {
                         if (grantResults[i] != PackageManager.PERMISSION_GRANTED ) {
                             Log.d("PermissionCheck", "++ result permission=" + permissions[i] + ", result=" + grantResults[i]);
                             if (ActivityCompat.shouldShowRequestPermissionRationale(context, permissions[i])) {
+                                Log.e("permissions check",permissions[i]);
                                 return RESULT_NOT_GRANTED;
                             }
                             else {
