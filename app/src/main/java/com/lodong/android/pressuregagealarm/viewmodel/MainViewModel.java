@@ -2,13 +2,11 @@ package com.lodong.android.pressuregagealarm.viewmodel;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.icu.text.SimpleDateFormat;
-import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -23,23 +21,16 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
 import com.lodong.android.pressuregagealarm.R;
 import com.lodong.android.pressuregagealarm.adapter.BTAdapter;
-import com.lodong.android.pressuregagealarm.entity.EventEntity;
+import com.lodong.android.pressuregagealarm.entity.BroadCastAction;
 import com.lodong.android.pressuregagealarm.entity.SettingEntity;
-import com.lodong.android.pressuregagealarm.model.GMailSender;
-import com.lodong.android.pressuregagealarm.model.SMSender;
 import com.lodong.android.pressuregagealarm.module.BTManager;
-import com.lodong.android.pressuregagealarm.roomDB.EventListInterface;
 import com.lodong.android.pressuregagealarm.roomDB.SettingListInterface;
+import com.lodong.android.pressuregagealarm.service.RecordService;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import javax.mail.MessagingException;
-import javax.mail.SendFailedException;
 
 public class MainViewModel extends ViewModel {
     private final String TAG = MainViewModel.class.getSimpleName();
@@ -49,7 +40,6 @@ public class MainViewModel extends ViewModel {
 
     private MutableLiveData<Boolean> isBluetoothDeviceConnect = new MutableLiveData<>();
     private BTAdapter btAdapter;
-    private ArrayList<BluetoothDevice> bluetoothDeviceList;
 
     private BluetoothResponseHandler handler;
 
@@ -78,22 +68,34 @@ public class MainViewModel extends ViewModel {
     private MutableLiveData<Long> progressTimeML = new MutableLiveData<>();
     private MutableLiveData<String> startTimeML = new MutableLiveData<>();
     private MutableLiveData<String> endTimeML = new MutableLiveData<>();
-    private double startPress;
-    private long progressTime = 0;
 
-    private final String GMAIL = "wsm9175@gmail.com";
-    private final String PWD = "fdxwjxrjajntcuok";
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            Log.d(TAG, "breadcast receiver "+action);
+            if (BroadCastAction.PROGRESS_TIME.equals(action)) {
+                //남은 시간 계산
+                long nowProgressTime = intent.getLongExtra(BroadCastAction.PROGRESS_TIME, 0);
+                long lastTime = MainViewModel.this.settingTime - nowProgressTime;
+                progressTimeML.setValue(lastTime);
+            }
+            if (BroadCastAction.START_TIME.equals(action)) {
+                startTimeML.setValue(intent.getStringExtra(BroadCastAction.START_TIME));
+            }
+            if (BroadCastAction.END_TIME.equals(action)) {
+                endTimeML.setValue(intent.getStringExtra(BroadCastAction.END_TIME));
+            }
+            if(BroadCastAction.END_RECORD.equals(action)){
+                Log.d(TAG, BroadCastAction.END_RECORD);
+                endRecord();
+            }
+        }
+    };
 
-    private Timer timer;
+    private IntentFilter intentFilter;
 
-    private BroadcastReceiver broadcastReceiver;
-
-    private static final long sendCriTime = 60000;
-    private static long sendDeviationMessageTime = 0;
-    private static int errorCount = 0;
-    private static final String ERROR_MESSAGE = "압력계로 부터 오류값이 3번 이상 전달되었습니다.";
-    private static final String DISCONNECT_MESSAGE = "압력계와 연결이 해제되었습니다.";
-    private static final String LOW_BATTERY_MESSAGE = "배터리 잔량이 20%이하입니다.";
+    private Intent recordServiceIntent;
 
 
     public MainViewModel() {
@@ -298,185 +300,36 @@ public class MainViewModel extends ViewModel {
 
     private void recordStart(double nowValue) {
         //init
-        this.progressTime = 0;
-        errorCount = 0;
+        recordServiceIntent = new Intent(mRef.get(), RecordService.class);
+        recordServiceIntent.putExtra("nowValue", nowValue);
+        recordServiceIntent.putExtra("settingTime", this.settingTime);
+        recordServiceIntent.putExtra("settingDeviation", this.settingDeviation);
+        recordServiceIntent.putStringArrayListExtra("settingPhoneNumber", (ArrayList<String>) this.settingPhoneNumber);
+        recordServiceIntent.putStringArrayListExtra("settingEmailList", (ArrayList<String>) this.settingEmailList);
+        isNowRecord.setValue(true);
+        mRef.get().startService(recordServiceIntent);
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(BroadCastAction.PROGRESS_TIME);
+        intentFilter.addAction(BroadCastAction.START_TIME);
+        intentFilter.addAction(BroadCastAction.END_TIME);
+        intentFilter.addAction(BroadCastAction.END_RECORD);
+        mRef.get().registerReceiver(this.receiver, intentFilter);
 
         long nowTime = System.currentTimeMillis();
         String recordStartTime = getTime(nowTime);
         String recordEnd = getTime(nowTime + this.settingTime);
-
         this.startTimeML.setValue(recordStartTime);
         this.endTimeML.setValue(recordEnd);
-
-        //편차값, 측정 시간, test 완료 여부, 베터리 20프로, 블루투스 연결 disconnect시, 타이머, 에러, 앱종료
-        isNowRecord.setValue(true);
-        this.startPress = nowValue;
-
-        //측정 시간
-        startRecordTimer();
-
-        //압력값 계산 및 값 에러
-        this.btManager.setUpdateListener(getUpdatePressListener());
-
-        //블루투스 연결 disconnect시 -> 선언된 connect callback에서 감시 후 처리.
-
-        /* broadcast 부분 - 배터리 및 앱 강제 종료시*/
-        broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.getAction().equals("android.intent.action.BATTERY_LOW")) {
-                    startSendEmail(LOW_BATTERY_MESSAGE);
-                    startSendMessage(LOW_BATTERY_MESSAGE);
-                    MainViewModel.this.insertEvent(LOW_BATTERY_MESSAGE);
-                }
-            }
-        };
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_BATTERY_LOW);
-        mRef.get().registerReceiver(broadcastReceiver, filter);
-
-    }
-
-    private void calDeviation(double nowPress) {
-        double nowDiff = this.startPress - nowPress;
-        if (nowPress < nowDiff) {
-            //편차보다 떨어진 경우
-            final String message = "압력계의 압력값이 편차값 범위를 벗어났습니다.\n" +
-                    "기록 시작 압력값 : " + this.startPress + "\n" +
-                    "현재 기록된 압력값 : " + nowPress + "\n" +
-                    "설정된 편차값 : " + this.settingDeviation + "\n" +
-                    "시작 압력값과 현재 기록된 압력값 차이 : " + nowDiff;
-            Log.d(TAG, message);
-            if (System.currentTimeMillis() - sendDeviationMessageTime > sendCriTime) {
-                sendDeviationMessageTime = System.currentTimeMillis();
-                startSendMessage(message);
-                startSendEmail(message);
-                MainViewModel.this.insertEvent(message);
-            }
-        } else if (nowPress > this.startPress + this.settingDeviation) {
-            //편차보다 높아진 경우
-            final String message = "압력계의 압력값이 편차값 범위를 벗어났습니다.\n" +
-                    "기록 시작 압력값 : " + this.startPress + "\n" +
-                    "현재 기록된 압력값 : " + nowPress + "\n" +
-                    "설정된 편차값 : " + this.settingDeviation + "\n" +
-                    "시작 압력값과 현재 기록된 압력값 차이 : " + nowDiff;
-            Log.d(TAG, message);
-            if (System.currentTimeMillis() - sendDeviationMessageTime > sendCriTime) {
-                sendDeviationMessageTime = System.currentTimeMillis();
-                startSendMessage(message);
-                startSendEmail(message);
-                MainViewModel.this.insertEvent(message);
-            }
-        }
-    }
-
-    private void checkError() {
-        if (errorCount >= 3) {
-            startSendMessage(ERROR_MESSAGE);
-            startSendEmail(ERROR_MESSAGE);
-            MainViewModel.this.insertEvent(ERROR_MESSAGE);
-        }
-    }
-
-    private void startRecordTimer() {
-        timer = new Timer();
-        Handler handler = new Handler();
-        final String message = "기록시간이 만료되어 기록이 정지 됐습니다.";
-        try {
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    handler.post(() -> {
-                        if (progressTime >= settingTime) {
-                            //경과 시간 지남
-                            startSendMessage(message);
-                            startSendEmail(message);
-                            endRecord();
-                        } else {
-                            progressTime += 1000;
-                            MainViewModel.this.getProgressTimeML().setValue(MainViewModel.this.settingTime - progressTime);
-                        }
-                    });
-                }
-            }, 0, 1000);
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void startSendMessage(final String message) {
-        if (this.settingPhoneNumber != null) {
-            if (this.settingPhoneNumber.size() != 0) {
-                SMSender smSender = new SMSender(mRef.get());
-                mRef.get().registerReceiver(smSender.getSentBroadCast(), smSender.getSentIntentFilter());
-                mRef.get().registerReceiver(smSender.getDeliveredBroadCast(), smSender.getDeliveredIntentFilter());
-                smSender.setTarketPhoneNumber((ArrayList<String>) this.settingPhoneNumber);
-                smSender.startSendMessages(message);
-            }
-        }
-    }
-
-    private void startSendEmail(final String message) {
-        if (this.settingEmailList != null) {
-            /* Toast.makeText(mRef.get(), "이메일을 발송합니다.", Toast.LENGTH_SHORT).show();*/
-            for (String email : this.settingEmailList) {
-                Log.d(TAG, "send email : " + email);
-                MailThread mailThread = new MailThread(message, email);
-                mailThread.start();
-            }
-        }
-    }
-
-    //메일 보내는 쓰레드
-    class MailThread extends Thread {
-        private String message;
-        private String email;
-
-        private MailThread(String message, String email) {
-            this.message = message;
-            this.email = email.trim();
-        }
-
-        public void run() {
-            GMailSender gMailSender = new GMailSender(GMAIL, PWD);
-            //GMailSender.sendMail(제목, 본문내용, 받는사람);
-            try {
-                gMailSender.sendMail("PDR 500 압력계 알림 발송", message, email);
-            } catch (SendFailedException e) {
-
-            } catch (MessagingException e) {
-                System.out.println("인터넷 문제" + e);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public void insertEvent(String event) {
-        long occurTime = System.currentTimeMillis();
-        EventEntity entity = new EventEntity(event, occurTime);
-        EventListInterface eventListInterface = new EventListInterface(mRef.get().getApplication());
-        eventListInterface.insert(entity);
     }
 
     private void endRecord() {
         this.isNowRecord.postValue(false);
-
-        this.timer.cancel();
-
         this.startTimeML.postValue("00:00:00");
         this.endTimeML.postValue("00:00:00");
-
-        BTManager.getInstance().setUpdateListener(null);
-
-        try {
-            //TODO [브로드캐스트 해제]
-            if (this.broadcastReceiver != null) {
-                mRef.get().unregisterReceiver(broadcastReceiver);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (recordServiceIntent != null) {
+            mRef.get().stopService(recordServiceIntent);
+            recordServiceIntent = null;
+            intentFilter = null;
         }
     }
 
@@ -500,6 +353,14 @@ public class MainViewModel extends ViewModel {
         cancelButton.setOnClickListener(view -> {
             alertDialog.dismiss();
         });
+    }
+
+    private String getTime(long time) {
+        Date mDate;
+        SimpleDateFormat mFormat = new SimpleDateFormat("yyyy-MM-dd k:mm:ss");
+
+        mDate = new Date(time);
+        return mFormat.format(mDate);
     }
 
     public BluetoothDeviceClickListener getBluetoothDeviceClickListener() {
@@ -545,56 +406,10 @@ public class MainViewModel extends ViewModel {
             @Override
             public void isDisConnected(Exception e) {
                 isBluetoothDeviceConnect.postValue(false);
-                // 측정중이였다면
-                if(MainViewModel.this.isNowRecord.getValue()!=null){
-                    if (MainViewModel.this.isNowRecord.getValue()) {
-                        startSendEmail(DISCONNECT_MESSAGE);
-                        startSendMessage(DISCONNECT_MESSAGE);
-                        insertEvent(DISCONNECT_MESSAGE);
-                        endRecord();
-                    }
-                }
             }
         };
     }
 
-    public UpdatePressListener getUpdatePressListener() {
-        return s -> {
-            if (MainViewModel.this.isNowRecord.getValue()) {
-                Log.d(TAG, "getUpdatePressListener");
-                //편차값
-                StringBuilder msg = new StringBuilder();
-                msg.append(s);
-                /* Log.d("MSG", msg.toString() + " , " + msg.toString().length());*/
-                if (msg.toString().length() >= 12 && msg.toString().length() < 23 && !msg.toString().contains("UNIT") && !msg.toString().contains("DATA")) {
-                    String[] strArrTmp = msg.toString().split(" ");
-                    if (strArrTmp.length == 3) {
-                        Log.d("ERROR", "********ERROR**********");
-                        errorCount += 1;
-                        checkError();
-                        return;
-                    } else if (strArrTmp.length == 2) {
-                        Log.d("ERROR", "********ERROR**********");
-                        errorCount += 1;
-                        checkError();
-                        return;
-                    } else {
-                        String press = strArrTmp[2].trim();
-                        String type = strArrTmp[3].trim();
-                        calDeviation(Double.parseDouble(press));
-                    }
-                }
-            }
-        };
-    }
-
-    private String getTime(long time) {
-        Date mDate;
-        SimpleDateFormat mFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
-        mDate = new Date(time);
-        return mFormat.format(mDate);
-    }
 
     public MutableLiveData<Boolean> getIsBluetoothDeviceConnect() {
         return isBluetoothDeviceConnect;
@@ -608,40 +423,8 @@ public class MainViewModel extends ViewModel {
         return settingTime;
     }
 
-    public void setSettingTime(long settingTime) {
-        this.settingTime = settingTime;
-    }
-
     public double getSettingDeviation() {
         return settingDeviation;
-    }
-
-    public void setSettingDeviation(double settingDeviation) {
-        this.settingDeviation = settingDeviation;
-    }
-
-    public String getSettingDeviationType() {
-        return settingDeviationType;
-    }
-
-    public void setSettingDeviationType(String settingDeviationType) {
-        this.settingDeviationType = settingDeviationType;
-    }
-
-    public List<String> getSettingPhoneNumber() {
-        return settingPhoneNumber;
-    }
-
-    public void setSettingPhoneNumber(List<String> settingPhoneNumber) {
-        this.settingPhoneNumber = settingPhoneNumber;
-    }
-
-    public List<String> getSettingEmailList() {
-        return settingEmailList;
-    }
-
-    public void setSettingEmailList(List<String> settingEmailList) {
-        this.settingEmailList = settingEmailList;
     }
 
     public MutableLiveData<Long> getProgressTimeML() {

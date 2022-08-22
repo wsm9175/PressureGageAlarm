@@ -135,29 +135,23 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
             }
         });
 
-        viewModel.getIsBluetoothDeviceConnect().observe(this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean isConnect) {
-                if (isConnect) {
-                    Toast.makeText(getApplication(), "기기와 연결이 성공적으로 되었습니다.", Toast.LENGTH_SHORT).show();
-                    MainActivity.this.isBluetoothDeviceConnect = true;
-                    changeSettingDisplay();
-                } else {
-                    MainActivity.this.isBluetoothDeviceConnect = false;
-                    binding.imgSignal.setVisibility(View.INVISIBLE);
-                    Toast.makeText(getApplication(), "기기와의 연결이 끊겼습니다.", Toast.LENGTH_SHORT).show();
-                }
+        viewModel.getIsBluetoothDeviceConnect().observe(this, isConnect -> {
+            if (isConnect) {
+                Toast.makeText(getApplication(), "기기와 연결이 성공적으로 되었습니다.", Toast.LENGTH_SHORT).show();
+                MainActivity.this.isBluetoothDeviceConnect = true;
+                changeSettingDisplay();
+            } else {
+                MainActivity.this.isBluetoothDeviceConnect = false;
+                binding.imgSignal.setVisibility(View.INVISIBLE);
+                Toast.makeText(getApplication(), "기기와의 연결이 끊겼습니다.", Toast.LENGTH_SHORT).show();
             }
         });
 
-        viewModel.getIsSetting().observe(this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean isSetting) {
-                if (isSetting) {
-                    MainActivity.this.isSetting = true;
-                    //set setting value
-                    changeSettingDisplay();
-                }
+        viewModel.getIsSetting().observe(this, isSetting -> {
+            if (isSetting) {
+                MainActivity.this.isSetting = true;
+                //set setting value
+                changeSettingDisplay();
             }
         });
         viewModel.getSettingInfo();
@@ -171,6 +165,10 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
     }
 
     public void changeUnit() {
+        if(isRecord){
+            Toast.makeText(getApplication(), "기록을 종료해주세요.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (isBluetoothDeviceConnect) {
             viewModel.changeUnit(nowType);
             isDisplaySetting = false;
@@ -218,9 +216,8 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
         }
     }
 
-
     private boolean requestPermissions() {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return PermissionCheck.checkAndRequestPermissions(this, permisson1);
         } else {
             return PermissionCheck.checkAndRequestPermissions(this, permisson2);
@@ -396,14 +393,6 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
             /*getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));*/
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (isRecord) {
-            viewModel.insertEvent("앱 강제종료 되었습니다.");
-        }
-        super.onDestroy();
     }
 
     private void settingGraph() {

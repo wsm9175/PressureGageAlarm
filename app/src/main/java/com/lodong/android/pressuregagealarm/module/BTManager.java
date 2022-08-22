@@ -54,6 +54,7 @@ public class BTManager {
 
     //for record
     private MainViewModel.UpdatePressListener updateListener;
+    private MainViewModel.BluetoothConnectListener recordBluetoothListener;
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @SuppressLint("MissingPermission")
@@ -80,7 +81,6 @@ public class BTManager {
         if (instance == null) {
             instance = new BTManager();
         }
-
         return instance;
     }
 
@@ -188,7 +188,7 @@ public class BTManager {
         } catch (IOException e) {
             e.printStackTrace();
             connectSuccessListener.onFailed(e);
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             e.printStackTrace();
             connectSuccessListener.onFailed(e);
         }
@@ -241,7 +241,7 @@ public class BTManager {
                         if (BTManager.this.settingBluetoothHandler != null) {
                             BTManager.this.settingBluetoothHandler.obtainMessage(2, bytes, -1, readMessage.toString()).sendToTarget();
                         }
-                        if(BTManager.this.updateListener != null){
+                        if (BTManager.this.updateListener != null) {
                             updateListener.isUpdate(readMessage.toString());
                         }
                         /* Log.d(TAG, readMessage.toString());*/
@@ -250,6 +250,9 @@ public class BTManager {
                 } catch (IOException e) {
                     Log.d(TAG, "Input stream was disconnected", e);
                     BTManager.this.connectListener.isDisConnected(e);
+                    if (BTManager.this.recordBluetoothListener != null) {
+                        BTManager.this.recordBluetoothListener.isDisConnected(e);
+                    }
                     break;
                 }
             }
@@ -292,5 +295,9 @@ public class BTManager {
     public void setUpdateListener(MainViewModel.UpdatePressListener updateListener) {
         Log.d(TAG, "set updateListener");
         this.updateListener = updateListener;
+    }
+
+    public void setRecordBluetoothListener(MainViewModel.BluetoothConnectListener recordBluetoothListener) {
+        this.recordBluetoothListener = recordBluetoothListener;
     }
 }

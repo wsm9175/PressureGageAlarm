@@ -15,12 +15,32 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    signingConfigs{
+        release{
+            storeFile file('C:\\Users\\seongminWoo\\Desktop\\outsourcing\\PressureGageAlarm\\DEA.jks')
+            storePassword "lodong"
+            keyAlias "key0"
+            keyPassword "lodong"
         }
     }
+
+    buildTypes {
+        release {
+            debuggable true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        applicationVariants.all { variant ->
+            variant.outputs.all {
+                def name = parent.project.getName()
+                def buildType = variant.buildType.name
+                def versionName = variant.versionName
+                outputFileName = "${name}-${buildType}-${versionName}.apk"
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
