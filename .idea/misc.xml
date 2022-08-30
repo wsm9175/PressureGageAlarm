@@ -8,15 +8,17 @@
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/drawable/button_basic_setting.xml" value="0.1" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/activity_main.xml" value="0.2" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/activity_record_list.xml" value="0.22659256092347158" />
-        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/activity_setting.xml" value="0.2" />
-        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/activity_setting_address_book.xml" value="0.4" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/activity_setting.xml" value="0.264" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/activity_setting_address_book.xml" value="0.176" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_bluetooth_device_list.xml" value="0.264" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_check_pairing.xml" value="0.264" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_input_address.xml" value="0.2419837537409149" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_no_address.xml" value="0.26806327490380505" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_press_zero.xml" value="0.2740487387772552" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_record_end.xml" value="0.20018535681186284" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_record_start.xml" value="0.2702009405728944" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_time_setting.xml" value="0.264" />
+        <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/dialog_unit_error.xml" value="0.2877297990594271" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/item_address.xml" value="0.264" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/item_bluetooth_device.xml" value="0.30055579307396324" />
         <entry key="..\:/Users/seongminWoo/Desktop/outsourcing/PressureGageAlarm/app/src/main/res/layout/item_record.xml" value="0.5487012987012987" />

@@ -19,9 +19,18 @@ import java.util.List;
 public class RecordListActivity extends AppCompatActivity {
     private ActivityRecordListBinding binding;
     private RecordAdapter adapter;
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+        overridePendingTransition(R.anim.none, R.anim.horizon_exit);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        overridePendingTransition(R.anim.horizon_enter, R.anim.none);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_record_list);
         binding.setActivity(this);
 

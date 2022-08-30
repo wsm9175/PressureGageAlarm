@@ -1,6 +1,7 @@
 package com.lodong.android.pressuregagealarm.view;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
@@ -20,17 +21,23 @@ import android.graphics.drawable.ColorDrawable;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.icu.text.SimpleDateFormat;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.core.app.ActivityCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -49,14 +56,17 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
+import com.lodong.android.pressuregagealarm.BuildConfig;
 import com.lodong.android.pressuregagealarm.OnReadMessageInterface;
 import com.lodong.android.pressuregagealarm.R;
 import com.lodong.android.pressuregagealarm.databinding.ActivityMainBinding;
+import com.lodong.android.pressuregagealarm.model.TextFileMaker;
 import com.lodong.android.pressuregagealarm.permission.PermissionCheck;
 import com.lodong.android.pressuregagealarm.viewmodel.MainViewModel;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnReadMessageInterface {
@@ -80,6 +90,10 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
     private final String MENT_ENDTIME = "기록 종료 시간 : ";
     private final double criTime = 3600000;
 
+    private final String PSI = "psi";
+    private final String BAR = "bar";
+    private final String KGF = "Kgf/Cm2";
+
     //기록 관련 변수
     private boolean isRecord;
     private Thread displayRecordThread;
@@ -91,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
             Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION
             , Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.SEND_SMS};
     private String[] permisson2 = new String[]{Manifest.permission.ACCESS_COARSE_LOCATION
-            , Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.SEND_SMS};
+            , Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.SEND_SMS, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
 
     @Override
@@ -105,9 +119,21 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
 
         binding.imgSignal.setVisibility(View.INVISIBLE);
 
-        if (requestPermissions()) {
-            settingGraph();
-            settingView();
+        // check permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                requestFilePermissions();
+            } else {
+                if (requestPermissions()) {
+                    settingGraph();
+                    settingView();
+                }
+            }
+        } else {
+            if (requestPermissions()) {
+                settingGraph();
+                settingView();
+            }
         }
     }
 
@@ -159,13 +185,11 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
 
     public void showDeviceList() {
         Log.d(TAG, "showDeviceList");
-        viewModel.setHandler(new BluetoothResponseHandler(this, Looper.getMainLooper()));
-        viewModel.settingBluetooth();
-        viewModel.showDeleteDialog();
+        showCheckParingDialog();
     }
 
     public void changeUnit() {
-        if(isRecord){
+        if (isRecord) {
             Toast.makeText(getApplication(), "기록을 종료해주세요.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -197,6 +221,9 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
 
                 binding.txtPressureValue.setText(press);
                 binding.txtType.setText(type);
+                if (!type.equals(PSI) && !type.equals(BAR) && !type.equals(KGF)) {
+                    viewModel.exitSocket();
+                }
                 if (binding.imgSignal.getVisibility() == View.INVISIBLE) {
                     binding.imgSignal.setVisibility(View.VISIBLE);
                 } else {
@@ -216,11 +243,46 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
         }
     }
 
+    private void requestFilePermissions() {
+        Log.d(TAG, "requestFilePermission");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                try {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                    intent.addCategory("android.intent.category.DEFAULT");
+                    intent.setData(Uri.parse(String.format("package:%s",getApplicationContext().getPackageName())));
+                    startActivityForResult(intent, 999);
+                } catch (Exception ex) {
+                    Intent intent = new Intent();
+                    intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                    startActivityForResult(intent, 999);
+                }
+            }
+        }
+    }
+
     private boolean requestPermissions() {
+        Log.d(TAG, "requestPermission");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return PermissionCheck.checkAndRequestPermissions(this, permisson1);
         } else {
             return PermissionCheck.checkAndRequestPermissions(this, permisson2);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "onActivityResult");
+        if (requestCode == 999) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    requestPermissions();
+                } else {
+                    Toast.makeText(getApplicationContext(), "앱 이용 불가능", Toast.LENGTH_SHORT).show();
+                    finishAffinity();
+                }
+            }
         }
     }
 
@@ -260,6 +322,32 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
                 .setNegativeButton("Cancel", okListener)
                 .create()
                 .show();
+    }
+
+    private void showCheckParingDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_check_pairing, null);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+
+        final AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+
+        Button okButton = dialogView.findViewById(R.id.btn_ok);
+        Button goButton = dialogView.findViewById(R.id.btn_cancel);
+
+        okButton.setOnClickListener(view -> {
+            alertDialog.dismiss();
+            viewModel.setHandler(new BluetoothResponseHandler(this, Looper.getMainLooper()));
+            viewModel.settingBluetooth();
+            viewModel.showDeleteDialog();
+        });
+
+        goButton.setOnClickListener(view -> {
+            Intent intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+            startActivity(intent);
+            alertDialog.dismiss();
+        });
     }
 
     public void intentSettingActivity() {

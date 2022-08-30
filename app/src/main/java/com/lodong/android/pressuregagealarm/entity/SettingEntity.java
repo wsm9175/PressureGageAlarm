@@ -25,13 +25,16 @@ public class SettingEntity {
     private List<String> phoneNumberList;
     @ColumnInfo(name = "emailList")
     private List<String> emailList;
+    @ColumnInfo(name = "messageMent")
+    private String messageMent;
 
-    public SettingEntity(long time, double deviation, List<String> phoneNumberList, List<String> emailList, String nowType) {
+    public SettingEntity(long time, double deviation, List<String> phoneNumberList, List<String> emailList, String nowType, String messageMent) {
         this.time = time;
         this.deviation = deviation;
         this.phoneNumberList = phoneNumberList;
         this.emailList = emailList;
         this.deviationType = nowType;
+        this.messageMent = messageMent;
     }
 
     public SettingEntity() {
@@ -86,6 +89,14 @@ public class SettingEntity {
         this.deviationType = deviationType;
     }
 
+    public String getMessageMent() {
+        return messageMent;
+    }
+
+    public void setMessageMent(String messageMent) {
+        this.messageMent = messageMent;
+    }
+
     @Override
     public String toString() {
         return "SettingEntity{" +
@@ -95,6 +106,7 @@ public class SettingEntity {
                 ", deviationType='" + deviationType + '\'' +
                 ", phoneNumberList=" + phoneNumberList +
                 ", emailList=" + emailList +
+                ", messageMent='" + messageMent + '\'' +
                 '}';
     }
 }

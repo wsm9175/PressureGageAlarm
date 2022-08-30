@@ -58,6 +58,7 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
     private double nowDeviation = -99;
     private List<String> nowPhoneNumberList;
     private List<String> nowEmailList;
+    private String nowMessageMent;
 
     ActivityResultLauncher<Intent> launcher;
 
@@ -66,16 +67,19 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
 
     private MutableLiveData<Double> nowValueML = new MutableLiveData<>();
     private boolean isPressZeroAlarm;
+    private final String NOSETTING = "설정되지 않음";
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
         finish();
+        overridePendingTransition(R.anim.none, R.anim.horizon_exit);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        overridePendingTransition(R.anim.horizon_enter, R.anim.none);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_setting);
         binding.setActivity(this);
         viewModel = new ViewModelProvider(this,
@@ -284,6 +288,7 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
         double deviation = this.nowDeviation;
         List<String> phoneNumberList = this.nowPhoneNumberList;
         List<String> emailList = this.nowEmailList;
+        String messageMent = binding.edtAdd.getText().toString();
 
         if (this.nowPhoneNumberList == null && this.nowEmailList == null) {
             showNoAddressDialog();
@@ -293,16 +298,19 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
             showNoAddressDialog();
             return;
         }
-        viewModel.insertSettingInfo(time, deviation, phoneNumberList, emailList, nowType);
+        if(messageMent.equals("")){
+            messageMent = NOSETTING;
+        }
+        if(nowType == null){
+            nowType = "null";
+        }
+        viewModel.insertSettingInfo(time, deviation, phoneNumberList, emailList, nowType, messageMent);
     }
 
     public void getSettingInfo() {
-        viewModel.getIsSetting().observe(this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean isSetting) {
-                SettingActivity.this.isSetting = true;
-                isSettingSuccess = false;
-            }
+        viewModel.getIsSetting().observe(this, isSetting -> {
+            SettingActivity.this.isSetting = true;
+            isSettingSuccess = false;
         });
         viewModel.getSettingInfo();
     }
@@ -391,9 +399,11 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
             List<String> emailNNumber = viewModel.getSettingEmailList();
             this.nowEmailList = emailNNumber;
             settingAddressBook();
-
             isSettingSuccess = true;
             binding.txtDeviation.setText("±" + this.nowDeviation);
+
+            this.nowMessageMent = viewModel.getMessageMent();
+            binding.edtAdd.setText(this.nowMessageMent);
         } else {
             double deviation = viewModel.getSettingDeviation();
             this.nowDeviation = deviation;
@@ -452,6 +462,9 @@ public class SettingActivity extends AppCompatActivity implements OnReadMessageI
 
             isSettingSuccess = true;
             binding.txtDeviation.setText("±" + this.nowDeviation);
+
+            this.nowMessageMent = viewModel.getMessageMent();
+            binding.edtAdd.setText(this.nowMessageMent);
         }
     }
 

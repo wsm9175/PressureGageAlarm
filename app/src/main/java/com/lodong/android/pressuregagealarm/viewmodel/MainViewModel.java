@@ -58,6 +58,7 @@ public class MainViewModel extends ViewModel {
     private String settingDeviationType;
     private List<String> settingPhoneNumber;
     private List<String> settingEmailList;
+    private String messageMent;
 
     private final double[] VALUE_PSI = {1.422339, 4.267018, 7.111696};
     private final double[] VALUE_BAR = {0.098067, 0.294199, 0.490332};
@@ -263,13 +264,16 @@ public class MainViewModel extends ViewModel {
                 String deviationType = settingEntity.getDeviationType();
                 List<String> phoneNumberList = settingEntity.getPhoneNumberList();
                 List<String> emailList = settingEntity.getEmailList();
+                String messageMent = settingEntity.getMessageMent();
 
                 MainViewModel.this.settingTime = time;
                 MainViewModel.this.settingDeviation = deviation;
                 MainViewModel.this.settingDeviationType = deviationType;
                 MainViewModel.this.settingPhoneNumber = phoneNumberList;
                 MainViewModel.this.settingEmailList = emailList;
+                MainViewModel.this.messageMent = messageMent;
 
+                Log.d(TAG, "settingEntity : "+settingEntity);
                 MainViewModel.this.isSetting.setValue(true);
             }
         });
@@ -306,6 +310,7 @@ public class MainViewModel extends ViewModel {
         recordServiceIntent.putExtra("settingDeviation", this.settingDeviation);
         recordServiceIntent.putStringArrayListExtra("settingPhoneNumber", (ArrayList<String>) this.settingPhoneNumber);
         recordServiceIntent.putStringArrayListExtra("settingEmailList", (ArrayList<String>) this.settingEmailList);
+        recordServiceIntent.putExtra("settingMessageMent", this.messageMent);
         isNowRecord.setValue(true);
         mRef.get().startService(recordServiceIntent);
         intentFilter = new IntentFilter();
@@ -361,6 +366,29 @@ public class MainViewModel extends ViewModel {
 
         mDate = new Date(time);
         return mFormat.format(mDate);
+    }
+
+    public void exitSocket(){
+        if(this.connectedBluetoothThread != null){
+            connectedBluetoothThread.cancel();
+            showUnitErrorDialog();
+        }
+    }
+
+    private void showUnitErrorDialog(){
+        View dialogView = mRef.get().getLayoutInflater().inflate(R.layout.dialog_unit_error, null);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(mRef.get());
+        builder.setView(dialogView);
+
+        final AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+
+        Button deleteButton = dialogView.findViewById(R.id.btn_ok);
+
+        deleteButton.setOnClickListener(view -> {
+            alertDialog.dismiss();
+        });
     }
 
     public BluetoothDeviceClickListener getBluetoothDeviceClickListener() {

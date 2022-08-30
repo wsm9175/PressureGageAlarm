@@ -270,8 +270,10 @@ public class BTManager {
         public void cancel() {
             try {
                 mmSocket.close();
+                BTManager.this.connectListener.isDisConnected(new Exception());
             } catch (IOException e) {
                 Toast.makeText(activity, "소켓 해제 중 오류가 발생했습니다.", Toast.LENGTH_LONG).show();
+                BTManager.this.connectListener.isDisConnected(e);
             }
         }
     }

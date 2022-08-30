@@ -16,6 +16,7 @@ import android.graphics.Color;
 import android.icu.text.SimpleDateFormat;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -28,11 +29,13 @@ import com.lodong.android.pressuregagealarm.entity.BroadCastAction;
 import com.lodong.android.pressuregagealarm.entity.EventEntity;
 import com.lodong.android.pressuregagealarm.model.GMailSender;
 import com.lodong.android.pressuregagealarm.model.SMSender;
+import com.lodong.android.pressuregagealarm.model.TextFileMaker;
 import com.lodong.android.pressuregagealarm.module.BTManager;
 import com.lodong.android.pressuregagealarm.roomDB.EventListInterface;
 import com.lodong.android.pressuregagealarm.view.MainActivity;
 import com.lodong.android.pressuregagealarm.viewmodel.MainViewModel;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -50,9 +53,11 @@ public class RecordService extends Service {
     private double settingDeviation;
     private List<String> settingPhoneNumber;
     private List<String> settingEmailList;
+    private String settingMessageMent;
+
+    private final String NOSETTING = "설정되지 않음";
 
     //녹화 관련 변수
-
     private double startPress;
     private long progressTime = 0;
 
@@ -72,6 +77,11 @@ public class RecordService extends Service {
 
     private static boolean isRecord = true;
 
+    private TextFileMaker textFileMaker;
+
+    private final String FOLDERNAME = "DEA압력계";
+    private String saveFileName;
+
 
     public RecordService() {
     }
@@ -90,11 +100,19 @@ public class RecordService extends Service {
         this.settingDeviation = intent.getDoubleExtra("settingDeviation", 0);
         this.settingPhoneNumber = intent.getStringArrayListExtra("settingPhoneNumber");
         this.settingEmailList = intent.getStringArrayListExtra("settingEmailList");
+        String messageMent = intent.getStringExtra("settingMessageMent");
+        if(messageMent.equals(NOSETTING)){
+            messageMent = "";
+        }else{
+            messageMent += "\n";
+        }
+        this.settingMessageMent = messageMent;
 
         Double nowValue = intent.getDoubleExtra("nowValue", 0);
 
         BTManager.getInstance().setRecordBluetoothListener(getBluetoothConnectListener());
         recordStart(nowValue);
+        fileSetting();
         startMyOwnForeground();
 
         return START_STICKY;
@@ -121,9 +139,9 @@ public class RecordService extends Service {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent.getAction().equals("android.intent.action.BATTERY_LOW")) {
-                    startSendEmail(LOW_BATTERY_MESSAGE);
-                    startSendMessage(LOW_BATTERY_MESSAGE);
-                    insertEvent(LOW_BATTERY_MESSAGE);
+                    startSendEmail(settingMessageMent+LOW_BATTERY_MESSAGE);
+                    startSendMessage(settingMessageMent+LOW_BATTERY_MESSAGE);
+                    insertEvent(settingMessageMent+LOW_BATTERY_MESSAGE);
                 }
             }
         };
@@ -143,8 +161,8 @@ public class RecordService extends Service {
                     handler.post(() -> {
                         if (progressTime >= settingTime) {
                             //경과 시간 지남
-                            startSendMessage(message);
-                            startSendEmail(message);
+                            startSendMessage(settingMessageMent+message);
+                            startSendEmail(settingMessageMent+message);
                             endRecord();
                         } else {
                             progressTime += 1000;
@@ -173,9 +191,9 @@ public class RecordService extends Service {
             Log.d(TAG, message);
             if (System.currentTimeMillis() - sendDeviationMessageTime > sendCriTime) {
                 sendDeviationMessageTime = System.currentTimeMillis();
-                startSendMessage(message);
-                startSendEmail(message);
-                insertEvent(message);
+                startSendMessage(settingMessageMent+message);
+                startSendEmail(settingMessageMent+message);
+                insertEvent(settingMessageMent+message);
             }
         } else if (nowPress > this.startPress + this.settingDeviation) {
             //편차보다 높아진 경우
@@ -187,9 +205,9 @@ public class RecordService extends Service {
             Log.d(TAG, message);
             if (System.currentTimeMillis() - sendDeviationMessageTime > sendCriTime) {
                 sendDeviationMessageTime = System.currentTimeMillis();
-                startSendMessage(message);
-                startSendEmail(message);
-                insertEvent(message);
+                startSendMessage(settingMessageMent+message);
+                startSendEmail(settingMessageMent+message);
+                insertEvent(settingMessageMent+message);
             }
         }
     }
@@ -203,9 +221,9 @@ public class RecordService extends Service {
 
     private void checkError() {
         if (errorCount >= 3) {
-            startSendMessage(ERROR_MESSAGE);
-            startSendEmail(ERROR_MESSAGE);
-            insertEvent(ERROR_MESSAGE);
+            startSendMessage(settingMessageMent+ERROR_MESSAGE);
+            startSendEmail(settingMessageMent+ERROR_MESSAGE);
+            insertEvent(settingMessageMent+ERROR_MESSAGE);
         }
     }
 
@@ -255,6 +273,17 @@ public class RecordService extends Service {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+    private void fileSetting(){
+        textFileMaker = new TextFileMaker();
+        textFileMaker.fileSetting(FOLDERNAME, getFileName());
+    }
+
+    private void writeTxt(String data, String type){
+        if(textFileMaker != null){
+            String writeData = getNowTime() + " " + "값 : " + data + "단위 : " + type + "\n\n";
+            textFileMaker.writeText(writeData);
         }
     }
 
@@ -312,6 +341,7 @@ public class RecordService extends Service {
                     String press = strArrTmp[2].trim();
                     String type = strArrTmp[3].trim();
                     calDeviation(Double.parseDouble(press));
+                    writeTxt(press, type);
                 }
             }
         };
@@ -326,20 +356,44 @@ public class RecordService extends Service {
 
             @Override
             public void isDisConnected(Exception e) {
-                startSendEmail(DISCONNECT_MESSAGE);
-                startSendMessage(DISCONNECT_MESSAGE);
-                insertEvent(DISCONNECT_MESSAGE);
+                startSendEmail(settingMessageMent+DISCONNECT_MESSAGE);
+                startSendMessage(settingMessageMent+DISCONNECT_MESSAGE);
+                insertEvent(settingMessageMent+DISCONNECT_MESSAGE);
                 endRecord();
                 stopSelf();
             }
         };
     }
+
+    private String getFileName(){
+        SimpleDateFormat mFormat = new SimpleDateFormat("yyyyMMdd_kmmss");
+        Date mDate;
+
+        long mNow = System.currentTimeMillis();
+        mDate = new Date(mNow);
+
+        return "m"+mFormat.format(mDate)+".txt";
+    }
+
+    private String getNowTime(){
+        SimpleDateFormat mFormat = new SimpleDateFormat("yy년 MM월 dd일 k시 mm분 ss초");
+        Date mDate;
+
+        long mNow = System.currentTimeMillis();
+        mDate = new Date(mNow);
+
+        return mFormat.format(mDate);
+    }
+
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         if (isRecord) {
             endRecord();
             insertEvent("테스트중 기록이 중지 되었습니다.");
+        }
+        if(textFileMaker != null){
+            textFileMaker.closeText();
         }
         super.onDestroy();
     }

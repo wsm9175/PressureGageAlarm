@@ -34,6 +34,7 @@ public class SettingViewModel extends ViewModel{
     private String settingDeviationType;
     private List<String> settingPhoneNumber;
     private List<String> settingEmailList;
+    private String settingMessageMent;
 
     public void setParent(Activity activity) {
         mRef = new WeakReference<>(activity);
@@ -60,20 +61,22 @@ public class SettingViewModel extends ViewModel{
                 String deviationType = settingEntity.getDeviationType();
                 List<String> phoneNumberList = settingEntity.getPhoneNumberList();
                 List<String> emailList = settingEntity.getEmailList();
+                String settingMessage = settingEntity.getMessageMent();
 
                 SettingViewModel.this.settingTime = time;
                 SettingViewModel.this.settingDeviation = deviation;
                 SettingViewModel.this.settingDeviationType = deviationType;
                 SettingViewModel.this.settingPhoneNumber = phoneNumberList;
                 SettingViewModel.this.settingEmailList = emailList;
+                SettingViewModel.this.settingMessageMent = settingMessage;
                 isSetting.setValue(true);
             }
         });
     }
 
-    public void insertSettingInfo(long time, double deviation, List<String> phoneNumberList, List<String> emailList, String nowType){
+    public void insertSettingInfo(long time, double deviation, List<String> phoneNumberList, List<String> emailList, String nowType, String messageMent){
         settingListInterface = new SettingListInterface(mRef.get().getApplication());
-        SettingEntity settingEntity = new SettingEntity(time, deviation, phoneNumberList, emailList, nowType);
+        SettingEntity settingEntity = new SettingEntity(time, deviation, phoneNumberList, emailList, nowType, messageMent);
         settingListInterface.insert(settingEntity);
         Toast.makeText(mRef.get(), "설정을 저장합니다", Toast.LENGTH_SHORT).show();
     }
@@ -120,5 +123,13 @@ public class SettingViewModel extends ViewModel{
 
     public void setSettingEmailList(List<String> settingEmailList) {
         this.settingEmailList = settingEmailList;
+    }
+
+    public String getMessageMent() {
+        return settingMessageMent;
+    }
+
+    public void setMessageMent(String messageMent) {
+        this.settingMessageMent = messageMent;
     }
 }
