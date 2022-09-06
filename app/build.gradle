@@ -10,7 +10,7 @@ android {
         minSdk 26
         targetSdk 32
         versionCode 1
-        versionName "1.0"
+        versionName "1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -33,7 +33,7 @@ android {
         }
         applicationVariants.all { variant ->
             variant.outputs.all {
-                def name = parent.project.getName()
+                def name = "DEA압력계"
                 def buildType = variant.buildType.name
                 def versionName = variant.versionName
                 outputFileName = "${name}-${buildType}-${versionName}.apk"

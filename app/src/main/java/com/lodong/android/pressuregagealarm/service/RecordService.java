@@ -74,6 +74,7 @@ public class RecordService extends Service {
     private static final String ERROR_MESSAGE = "압력계로 부터 오류값이 3번 이상 전달되었습니다.";
     private static final String DISCONNECT_MESSAGE = "압력계와 연결이 해제되었습니다.";
     private static final String LOW_BATTERY_MESSAGE = "배터리 잔량이 20%이하입니다.";
+    private static final String COMPLETE = "정상적으로 기록되었습니다.";
 
     private static boolean isRecord = true;
 
@@ -153,7 +154,7 @@ public class RecordService extends Service {
     private void startRecordTimer() {
         timer = new Timer();
         Handler handler = new Handler();
-        final String message = "기록시간이 만료되어 기록이 정지 됐습니다.";
+        final String message = COMPLETE;
         try {
             timer.schedule(new TimerTask() {
                 @Override
