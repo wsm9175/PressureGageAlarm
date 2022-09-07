@@ -8,27 +8,15 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.PendingIntent;
-import android.app.ProgressDialog;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbManager;
-import android.icu.text.SimpleDateFormat;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -37,7 +25,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -50,24 +37,13 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.google.android.material.tabs.TabItem;
-import com.hoho.android.usbserial.driver.UsbSerialDriver;
-import com.hoho.android.usbserial.driver.UsbSerialPort;
-import com.hoho.android.usbserial.driver.UsbSerialProber;
-import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.lodong.android.pressuregagealarm.BluetoothResponseHandler;
-import com.lodong.android.pressuregagealarm.BuildConfig;
 import com.lodong.android.pressuregagealarm.OnReadMessageInterface;
 import com.lodong.android.pressuregagealarm.R;
 import com.lodong.android.pressuregagealarm.databinding.ActivityMainBinding;
-import com.lodong.android.pressuregagealarm.model.TextFileMaker;
 import com.lodong.android.pressuregagealarm.permission.PermissionCheck;
 import com.lodong.android.pressuregagealarm.viewmodel.MainViewModel;
 
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.Date;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnReadMessageInterface {
     private final String TAG = MainActivity.class.getSimpleName();
@@ -98,7 +74,6 @@ public class MainActivity extends AppCompatActivity implements OnReadMessageInte
     private boolean isRecord;
     private Thread displayRecordThread;
     private LineChart chart;
-
 
     //권한 관련 변수
     private String[] permisson1 = new String[]{Manifest.permission.BLUETOOTH_CONNECT,

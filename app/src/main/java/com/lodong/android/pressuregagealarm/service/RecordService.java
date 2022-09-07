@@ -74,7 +74,8 @@ public class RecordService extends Service {
     private static final String ERROR_MESSAGE = "압력계로 부터 오류값이 3번 이상 전달되었습니다.";
     private static final String DISCONNECT_MESSAGE = "압력계와 연결이 해제되었습니다.";
     private static final String LOW_BATTERY_MESSAGE = "배터리 잔량이 20%이하입니다.";
-    private static final String COMPLETE = "정상적으로 기록되었습니다.";
+    private static final String COMPLETE = "정상적으로 기록이 완료되었습니다.";
+    private static final String START = "정상적으로 기록이 시작되었습니다.";
 
     private static boolean isRecord = true;
 
@@ -149,6 +150,9 @@ public class RecordService extends Service {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_BATTERY_LOW);
         registerReceiver(broadcastReceiver, filter);
+
+        startSendMessage(settingMessageMent+START);
+        startSendEmail(settingMessageMent+START);
     }
 
     private void startRecordTimer() {
